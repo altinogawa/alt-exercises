@@ -199,6 +199,18 @@ let cursorInRect = (mouseX, mouseY, rectX, rectY, rectW, rectH) => {
 }
 
 
+const sfx1 = new Audio();
+sfx1.src = 'audio/sundae.wav';
+sfx1.preload = 'auto';
+
+const sfx2 = new Audio();
+sfx2.src = 'audio/cherry.wav';
+sfx2.preload = 'auto';
+
+const sfx3 = new Audio();
+sfx3.src = 'audio/strawberry.wav';
+sfx3.preload = 'auto';
+
 ///DRAW BUTTON NONSENSE
 // Draw "button" on canvas
   const button = {
@@ -208,15 +220,39 @@ let cursorInRect = (mouseX, mouseY, rectX, rectY, rectW, rectH) => {
     height: 30,
     text: 'Save Image'
   };
+  
+  const sfxButton1 = {
+    x: 105,
+    y: 85,
+    width: 15,
+    height: 15,
+    text: '>'
+  };
+  
+  const sfxButton2 = {
+    x: 105,
+    y: 185,
+    width: 15,
+    height: 15,
+    text: '>'
+  };
+  
+  const sfxButton3 = {
+    x: 105,
+    y: 285,
+    width: 15,
+    height: 15,
+    text: '>'
+  };
 
-  function drawButton() {
+  function drawButton(b) {
     ctx.fillStyle = '#4CAF50';
-    ctx.fillRect(button.x, button.y, button.width, button.height);
+    ctx.fillRect(b.x, b.y, b.width, b.height);
     ctx.fillStyle = 'white';
     ctx.font = '16px Arial';
-    ctx.fillText(button.text, button.x + 10, button.y + 20);
+    ctx.fillText(b.text, b.x + 10, b.y + 20);
   }
-
+  
   // Handle canvas clicks
   canvas.addEventListener('click', function (e) {
     const rect = canvas.getBoundingClientRect();
@@ -235,6 +271,42 @@ let cursorInRect = (mouseX, mouseY, rectX, rectY, rectW, rectH) => {
       link.download = 'canvas-image.png';
       link.click();
       document.body.removeChild(link); // Remove after click
+    }
+	
+    if (
+      x >= sfxButton1.x &&
+      x <= sfxButton1.x + sfxButton1.width &&
+      y >= sfxButton1.y &&
+      y <= sfxButton1.y + sfxButton1.height
+    ) {
+      sfx1.currentTime = 0;
+      sfx1.play().catch(err => {
+        console.warn('Audio play failed (likely due to browser autoplay policy):', err);
+      });
+    }
+	
+    if (
+      x >= sfxButton2.x &&
+      x <= sfxButton2.x + sfxButton2.width &&
+      y >= sfxButton2.y &&
+      y <= sfxButton2.y + sfxButton2.height
+    ) {
+      sfx2.currentTime = 0;
+      sfx2.play().catch(err => {
+        console.warn('Audio play failed (likely due to browser autoplay policy):', err);
+      });
+    }
+	
+    if (
+      x >= sfxButton3.x &&
+      x <= sfxButton3.x + sfxButton3.width &&
+      y >= sfxButton3.y &&
+      y <= sfxButton3.y + sfxButton3.height
+    ) {
+      sfx3.currentTime = 0;
+      sfx3.play().catch(err => {
+        console.warn('Audio play failed (likely due to browser autoplay policy):', err);
+      });
     }
   });
 
@@ -334,7 +406,10 @@ function animate() {
     ctx.clearRect(0, 0, w, ctx.canvas.height)
     ctx.fillStyle = 'white'
 
-    drawButton();
+    drawButton(button);
+    drawButton(sfxButton1);
+    drawButton(sfxButton2);
+    drawButton(sfxButton3);
     background.forEach(e => {
         e.draw(ctx)
     })
