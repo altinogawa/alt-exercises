@@ -2,153 +2,29 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>CanvasShape Test</title>
+  <title>Shapes!!</title>
   <style>
     canvas {
       border: 1px solid #ccc;
       touch-action: none; /* Prevent default gestures */
+	  display: block; /* removes inline spacing */
+    }
+	body, html {
+      margin: 0;
+      padding: 0;
     }
   </style>
   <link rel="shortcut icon" type="image/x-icon" href="../../favicon.ico?">
 </head>
 <body>
-  <canvas id="canvas" width="600" height="400"></canvas>
+  <canvas id="canvas"></canvas>
   <script>
-//Square Class
-class Square {
-    constructor(x, y, edge, image, outline) {
-
-        this.image = image
-        this.x = x
-        this.y = y
-        this.edge = edge
-        this.selected = false
-        this.active = false
-        this.outline = outline
-
-    }
-    draw(context) {
-        //context.fillStyle = "gray"
-
-        //context.fillRect(this.x, this.y, this.edge, this.edge)
-        context.drawImage(this.image, this.x, this.y, this.edge, this.edge)
-        if (this.outline) {
-            context.lineWidth = 2;
-            context.strokeStyle = "gray"
-            context.strokeRect(this.x, this.y, this.edge, this.edge)
-        }
-    }
-    update() {
-        this.x += 0.1
-    }
-
-    select() {
-        this.selected = !this.selected
-    }
-
-    activate() {
-        this.active = !this.active
-    }
-}
+  
+let colorNames = ['red', 'yellow', 'blue', 'green', 'purple', 'orange', 'pink', 'brown', 'white', 'black'];
+let shapeNames = ['circle', 'triangle', 'square', 'rectangle', 'heart', 'diamond', 'star'];
 
 
-
-
-//Dropdown menu class : )
-    class DropdownMenu {
-      constructor(x, y, w, h, label, options) {
-        this.x = x;
-        this.y = y;
-        this.w = w;
-        this.h = h;
-        this.label = label;
-        this.options = options;
-        this.isOpen = false;
-        this.selected = label;
-      }
-
-      draw(ctx) {
-        // Draw main button
-        ctx.fillStyle = "#ddd";
-        ctx.fillRect(this.x, this.y, this.w, this.h);
-        ctx.strokeRect(this.x, this.y, this.w, this.h);
-        ctx.fillStyle = "#000";
-        ctx.fillText(this.selected ? this.selected : this.label, this.x + 10, this.y + 20);
-
-        // Draw options if open
-        if (this.isOpen) {
-          this.options.forEach((opt, i) => {
-            const oy = this.y + this.h * (i + 1);
-            ctx.fillStyle = "#fff";
-            ctx.fillRect(this.x, oy, this.w, this.h);
-            ctx.strokeRect(this.x, oy, this.w, this.h);
-            ctx.fillStyle = "#000";
-            ctx.fillText(opt, this.x + 10, oy + 20);
-          });
-        }
-      }
-
-      handleClick(mx, my) {
-        // Toggle menu if main button clicked
-        if (mx > this.x && mx < this.x + this.w &&
-            my > this.y && my < this.y + this.h) {
-          this.isOpen = !this.isOpen;
-          return true;
-        }
-
-        // Handle option selection
-        if (this.isOpen) {
-          this.options.forEach((opt, i) => {
-            const oy = this.y + this.h * (i + 1);
-            if (mx > this.x && mx < this.x + this.w &&
-                my > oy && my < oy + this.h) {
-              this.selected = opt;
-              this.isOpen = false;
-            }
-          });
-        }
-        return false;
-      }
-    }
-
-
-
-
-
-    // --- CanvasShape class goes here ---
-    // (Paste the full class definition from earlier here)
-  let colorNames = ['red', 'yellow', 'blue', 'green', 'purple', 'orange', 'pink', 'brown', 'white', 'black'];
-  let shapeNames = ['circle', 'triangle', 'square', 'rectangle', 'heart', 'diamond', 'star'];
-
-class CanvasShape {
-  constructor(x, y, scaleX = 1, scaleY = 1, color = 'red', shape = 'circle') {
-    this.x = x;
-    this.y = y;
-    this.scaleX = scaleX;
-    this.scaleY = scaleY;
-    this.rotation = 0;
-    this.color = color;
-    this.shape = shape;
-
-    this.touchStartInfo = null;
-  }
-
-
-  render(ctx) {
-    ctx.save();
-    ctx.translate(this.x, this.y);
-    ctx.rotate(this.rotation);
-    ctx.scale(this.scaleX, this.scaleY);
-    ctx.fillStyle = this.color;
-
-    const path = this.getPath(this.shape);
-    
-
-    ctx.fill(path);
-    ctx.restore();
-  }
-
-  getPath(shape) {
+  function getPath(shape) {
     const path = new Path2D();
     switch (shape) {
       case 'circle':
@@ -197,6 +73,142 @@ class CanvasShape {
     return path;
   }
 
+
+//Square Class
+class Square {
+    constructor(x, y, edge, image, outline) {
+        this.image = image
+        this.x = x
+        this.y = y
+        this.edge = edge
+        this.selected = false
+        this.active = false
+        this.outline = outline
+
+    }
+    draw(context) {
+        context.drawImage(this.image, this.x, this.y, this.edge, this.edge)
+        if (this.outline) {
+			if(this.selected) {
+			  context.linewidth = 5
+              context.strokeStyle = "red"
+            } else  {
+              context.lineWidth = 2;
+              context.strokeStyle = "gray"
+			}
+            context.strokeRect(this.x, this.y, this.edge, this.edge)
+        }
+    }
+    select() {
+        this.selected = !this.selected
+    }
+
+    activate() {
+        this.active = !this.active
+    }
+}
+
+//ShapeSquare Class
+class ShapeSquare {
+    constructor(x, y, edge, shape, outline) {
+        this.shape = shape
+        this.x = x
+        this.y = y
+        this.edge = edge
+        this.selected = false
+        this.active = false
+        this.outline = outline
+
+    }
+    draw(context) {
+	
+        context.save();
+        context.translate(this.x + this.edge / 2, this.y + this.edge / 2);
+        //context.rotate(this.rotation);
+        context.scale(0.4, 0.4);
+        context.fillStyle = currentColor
+
+        const path = getPath(this.shape);
+    
+        context.fill(path);
+        context.restore();
+	
+        if (this.outline) {
+            context.lineWidth = 2;
+            context.strokeStyle = "gray"
+            context.strokeRect(this.x, this.y, this.edge, this.edge)
+        }
+    }
+    select() {
+        this.selected = !this.selected
+    }
+
+    activate() {
+        this.active = !this.active
+    }
+}
+
+//ColorSquare Class
+class ColorSquare {
+    constructor(x, y, edge, color, outline) {
+        this.color = color
+        this.x = x
+        this.y = y
+        this.edge = edge
+        this.selected = false
+        this.active = false
+        this.outline = outline
+
+    }
+    draw(context) {
+	
+        context.fillStyle = this.color
+        context.fillRect(this.x + 2, this.y + 2, this.edge - 4, this.edge - 4)
+		
+        if (this.outline) {
+            context.lineWidth = 2;
+            context.strokeStyle = "gray"
+            context.strokeRect(this.x, this.y, this.edge, this.edge)
+        }
+    }
+    select() {
+        this.selected = !this.selected
+    }
+
+    activate() {
+        this.active = !this.active
+    }
+}
+
+//Shape Class
+class CanvasShape {
+  constructor(x, y, scaleX = 1, scaleY = 1, color = 'red', shape = 'circle') {
+    this.x = x;
+    this.y = y;
+    this.scaleX = scaleX;
+    this.scaleY = scaleY;
+    this.rotation = 0;
+    this.color = color;
+    this.shape = shape;
+
+    this.touchStartInfo = null;
+  }
+
+
+  render(ctx) {
+    ctx.save();
+    ctx.translate(this.x, this.y);
+    ctx.rotate(this.rotation);
+    ctx.scale(this.scaleX, this.scaleY);
+    ctx.fillStyle = this.color;
+
+    const path = getPath(this.shape);
+    
+
+    ctx.fill(path);
+    ctx.restore();
+  }
+
   containsPoint(x, y, ctx) {
     ctx.save();
     ctx.scale(1 / this.scaleX, 1 / this.scaleY);
@@ -206,7 +218,7 @@ class CanvasShape {
 
     
 
-    const path = this.getPath(this.shape)
+    const path = getPath(this.shape)
 
     //Transform the mouse xy to properly match it
     const matrix = ctx.getTransform(); // DOMMatrix
@@ -267,137 +279,84 @@ class CanvasShape {
   }
 }
 
-    const canvas = document.getElementById('canvas');
-    const ctx = canvas.getContext('2d');
+class LinePath {
+    constructor(points, thickness, color) {
+		this.path = null
+        this.points = points
+        this.thickness = thickness
+        this.color = color
 
-    const shapes = new Array()
-
-
-    shapes.push(new CanvasShape(300, 200, 1, 1, 'pink', 'diamond'))
-    shapes.push(new CanvasShape(100, 100, 1, 1, 'green', 'circle'))
-
-// Create two dropdowns
-    const shapeMenu = new DropdownMenu(20, 20, 120, 30, "circle", shapeNames);
-    const colorMenu = new DropdownMenu(160, 20, 120, 30, "red", colorNames);
-
-// Create preview shape
-    const addShape = new CanvasShape (320, 30, 0.5, 0.5, 'red', 'circle')
-
-let gImg = new Image();
-gImg.src = '../img/garbage.png' //FIX THIS
-    let garbage = new Square(500, 20, 60, gImg, true)
-
-let rImg = new Image();
-rImg.src = '../img/A.png' //FIX THIS
-    let resetButton = new Square(420, 20, 60, rImg, true)
-
-    function draw() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      
-      garbage.draw(ctx)
-      resetButton.draw(ctx)
-      addShape.render(ctx)
-      shapes.forEach(e => {
-        e.render(ctx)
-      })
-
-      shapeMenu.draw(ctx);
-      colorMenu.draw(ctx);
-
-
-      requestAnimationFrame(draw);
     }
+}
 
-    draw();
+//Canvas 
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
 
-    // Touch events
-    canvas.addEventListener('touchstart', (e) => {
-      for (let i = shapes.length - 1; i >=0; i--) {
-        shapes[i].handleTouchStart(e);
-      }
-    });
+//Array for the shapes, with initial conditions
+const shapes = new Array()
+//shapes.push(new CanvasShape(300, 200, 1, 1, 'pink', 'diamond'))
+//shapes.push(new CanvasShape(100, 100, 1, 1, 'green', 'circle'))
 
-    canvas.addEventListener('touchmove', (e) => {
-      e.preventDefault(); // Prevent scrolling
-      for (let i = shapes.length - 1; i >=0; i--) {
-        shapes[i].handleTouchMove(e);
-      }
-    });
+//Create the new color menu on the left!
+const colorButtons = new Array()
+for (let i = 0; i < colorNames.length; i++) {
+  colorButtons.push(new ColorSquare(20, 100 + 80 * i, 60, colorNames[i], true))
+}
 
-    canvas.addEventListener('touchend', (e) => {
-      for (let i = shapes.length - 1; i >=0; i--) {
-        shapes[i].handleTouchEnd(e);
-      }
-    });
+//Now we do the shape buttons!!
+const shapeButtons = new Array()
+for (let i = 0; i < shapeNames.length; i++) {
+  shapeButtons.push(new ShapeSquare(100, 100 + 80 * i, 60, shapeNames[i], true))
+}
 
-    // Optional: mouse drag for desktop testing
-    let dragging = false;
-    let dragObject = null;
-    let clickStartX = 0;
-    let clickStartY = 0;
+//Garbage image icon
+let gImg = new Image();
+gImg.src = 'garbage.png' //FIX THIS
+let garbage = new Square(500, 20, 60, gImg, true)
 
-canvas.addEventListener("click", (e) => {
-      const rect = canvas.getBoundingClientRect();
-      const mx = e.clientX - rect.left;
-      const my = e.clientY - rect.top;
+//Reset image icon
+let rImg = new Image();
+rImg.src = 'A.png' //FIX THIS
+let resetButton = new Square(420, 20, 60, rImg, true)
 
-      // Handle clicks for both menus
-      if (!shapeMenu.handleClick(mx, my)) {
-        if(!colorMenu.handleClick(mx, my)) {
-          if (cursorInRect(mx, my, resetButton.x, resetButton.y, resetButton.edge, resetButton.edge)) {
-            shapes.length = 0
-          }
-        }
-      }
+//Pencil image icon
+let pImg = new Image();
+pImg.src = 'pencil.png'
+let drawButton = new Square(20, 15, 60, pImg, true)
 
+//Eraser image icon
+let eImg = new Image();
+eImg.src = 'eraser.png'
+let eraseButton = new Square(100, 15, 60, eImg, true)
 
-
-      addShape.color = colorMenu.selected;
-      addShape.shape = shapeMenu.selected;
-      draw();
-    });
-
-    canvas.addEventListener('mousedown', (e) => {
-      const rect = canvas.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-      for (let i = shapes.length - 1; i >=0; i--) {
-        if(dragging) return;
-        if (shapes[i].containsPoint(x, y, ctx)) {
-          dragging = true;
-          dragObject = shapes[i]
-          clickStartX = x;
-          clickStartY = y;
-
-          //push to back of array
-          const [element] = shapes.splice(i, 1);
-          shapes.push(element);
-        }
-      }
-      if(!dragging) {
-        if (addShape.containsPoint(x, y, ctx)) {
-          dragging = true;
-          let newShape = new CanvasShape (320, 30, 1, 1, colorMenu.selected, shapeMenu.selected)
-          shapes.push(newShape)
-          dragObject = newShape
-          clickStartX = x;
-          clickStartY = y;
+// Optional: mouse drag for desktop testing
+let dragging = false;
+let dragObject = null;
+let clickStartX = 0;
+let clickStartY = 0;
 
 
-        }
-      }
-    });
+const modes = ['shapes', 'draw', 'erase']
+let currentMode = 'shapes'
+let currentColor = 'red'
 
-    canvas.addEventListener('mousemove', (e) => {
-      if (dragging) {
-        const rect = canvas.getBoundingClientRect();
-        dragObject.x += e.clientX - rect.left - clickStartX;
-        dragObject.y += e.clientY - rect.top - clickStartY;
-        clickStartX = e.clientX - rect.left;
-        clickStartY = e.clientY - rect.top;
-      }
-    });
+//TESTING DRAWING CODE
+ let drawing = false;
+ let lines = new Array()
+let linePoints = new LinePath([], 8, currentColor); // store all points of a path
 
+
+function resizeCanvas() {
+  canvas.width = window.innerWidth - 2;
+  canvas.height = window.innerHeight - 2;
+  
+  garbage.x = window.innerWidth - 20 - garbage.edge
+  garbage.y = window.innerHeight - 20 - garbage.edge
+  draw(); // redraw after resize
+}
+
+//Functions!!
 let getMouseCoords = (canvas, event) => {
     let canvasCoords = canvas.getBoundingClientRect()
     return {
@@ -405,20 +364,327 @@ let getMouseCoords = (canvas, event) => {
         y: event.pageY - canvasCoords.top
     }
 }
+
 let cursorInRect = (mouseX, mouseY, rectX, rectY, rectW, rectH) => {
     let xLine = mouseX > rectX && mouseX < rectX + rectW
     let yLine = mouseY > rectY && mouseY < rectY + rectH
 
     return xLine && yLine
 }
-    canvas.addEventListener('mouseup', (eV) => {
-      let mouse = getMouseCoords(canvas, eV)
-      if (cursorInRect(mouse.x, mouse.y, garbage.x, garbage.y, garbage.edge, garbage.edge)) {
-        shapes.pop() //Should always be the selected one
-      }
-      dragging = false;
-      dragObject = null
+
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  
+  //Draw the card interface on the right
+  garbage.draw(ctx)
+  shapes.forEach(e => {
+	e.render(ctx)
+  })
+
+  lines.forEach(e => {
+    redrawPath(e)
+  })  
+  if(linePoints.points.length > 1)
+    redrawPoints(linePoints)
+
+  //Draw the menu on the left
+  ctx.fillStyle = '#eeeeff'
+  ctx.fillRect(0, 0, 180, canvas.height)
+  
+  ctx.strokeStyle = 'grey';
+  ctx.lineWidth = 2; // optional, makes it thicker
+
+  // Draw vertical line at x = 100
+  ctx.beginPath();
+  ctx.moveTo(180, 0);                // start at top (y=0)
+  ctx.lineTo(180, canvas.height);    // go down to bottom
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo(0, 85);                // start at top (y=0)
+  ctx.lineTo(180, 85);    // go down to bottom
+  ctx.stroke();
+  
+  resetButton.draw(ctx)
+  
+  for (let i = 0; i < colorNames.length; i++) {
+    colorButtons[i].draw(ctx)
+  }
+  
+  for (let i = 0; i < shapeNames.length; i++) {
+    shapeButtons[i].draw(ctx)
+  }
+  
+  drawButton.draw(ctx)
+  eraseButton.draw(ctx)
+  /*
+  //Draw a square for the drag object
+  if(addShape.color == 'white') {
+    ctx.fillStyle = '#999999'
+  }
+  else {
+    ctx.fillStyle = '#ffffff'
+  }
+  ctx.strokeStyle = 'grey';
+  ctx.lineWidth = 2; // optional, makes it thicker
+  ctx.fillRect(60, 15, 60, 60)
+  
+  addShape.render(ctx)
+  */
+  if(dragObject != null) {
+    dragObject.render(ctx)
+  }
+
+  requestAnimationFrame(draw);
+}
+
+//Baby's first draw and resize call
+draw();
+resizeCanvas();
+
+// Events!!
+canvas.addEventListener('touchstart', (e) => {
+  for (let i = shapes.length - 1; i >=0; i--) {
+	shapes[i].handleTouchStart(e);
+  }
+});
+
+canvas.addEventListener('touchmove', (e) => {
+  e.preventDefault(); // Prevent scrolling
+  for (let i = shapes.length - 1; i >=0; i--) {
+	shapes[i].handleTouchMove(e);
+  }
+});
+
+canvas.addEventListener('touchend', (e) => {
+  for (let i = shapes.length - 1; i >=0; i--) {
+	shapes[i].handleTouchEnd(e);
+  }
+});
+
+canvas.addEventListener("click", (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const mx = e.clientX - rect.left;
+      const my = e.clientY - rect.top;
+
+      // Reset button!!
+	  if (cursorInRect(mx, my, resetButton.x, resetButton.y, resetButton.edge, resetButton.edge)) {
+		shapes.length = 0
+		lines.length = 0
+	  }
+	  
+	  //Color Setting!
+	  for (let i = 0; i < colorNames.length; i++) {
+		if (cursorInRect(mx, my, colorButtons[i].x, colorButtons[i].y, colorButtons[i].edge, colorButtons[i].edge)) {
+	      currentColor = colorButtons[i].color
+		  linePoints.color = colorButtons[i].color
+		}
+	  }
+	  
+	  
+	  //Pen mode toggle!!
+	  if (cursorInRect(mx, my, drawButton.x, drawButton.y, drawButton.edge, drawButton.edge)) {
+		  if(!drawButton.selected) {
+			currentMode = 'draw'
+			drawButton.select()
+			if(eraseButton.selected) {
+			  eraseButton.select()
+			}
+		  }
+		  else {
+			currentMode = 'shapes'
+			drawButton.select()
+		  }
+	  }
+	  
+	  //Erase mode toggle!!
+	  if (cursorInRect(mx, my, eraseButton.x, eraseButton.y, eraseButton.edge, eraseButton.edge)) {
+		  if(!eraseButton.selected) {
+			currentMode = 'erase'
+			eraseButton.select()
+			if(drawButton.selected) {
+			  drawButton.select()
+			}
+		  }
+		  else {
+			currentMode = 'shapes'
+			eraseButton.select()
+		  }
+	  }
+	  
+	  if(currentMode == 'erase') {
+		let found = false;
+	    for(let i = lines.length - 1; i >= 0; i--) {
+		  if(found) { return; }
+		  if(lines[i].path != null) { 
+		  if(ctx.isPointInStroke(lines[i].path, mx, my)) {
+		    lines.splice(i, 1)
+			found = true
+		  }}
+		}
+		
+		if(!found) {
+		  //Look for shapes to destroy indiscriminately
+		  for(let i = shapes.length - 1; i >= 0; i--) {
+			if(found) break;
+		    if(shapes[i].containsPoint(mx, my, ctx)) {
+			  //destroy!
+			  found = true
+			  shapes.splice(i, 1);
+			}
+		  }
+		}
+	  }
+	  
+      draw();
     });
+
+canvas.addEventListener('mousedown', (e) => {
+  const rect = canvas.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+  if(currentMode != 'shapes') {
+    let found = false;
+    for (let i = 0; i < shapeNames.length; i++) {
+	  if (cursorInRect(x, y, shapeButtons[i].x, shapeButtons[i].y, shapeButtons[i].edge, shapeButtons[i].edge)) {
+        found = true
+	    currentMode = 'shapes'
+	    if(drawButton.selected) drawButton.select()
+	    if(eraseButton.selected) eraseButton.select()
+	  }
+	}
+	if (!found) 
+	  return;
+  }
+  for (let i = shapes.length - 1; i >=0; i--) {
+	if(dragging) return;
+	if (shapes[i].containsPoint(x, y, ctx)) {
+	  dragging = true;
+	  dragObject = shapes[i]
+	  clickStartX = x;
+	  clickStartY = y;
+
+	  //push to back of array
+	  const [element] = shapes.splice(i, 1);
+	  shapes.push(element);
+	}
+  }
+  if(!dragging) {
+  
+	  //Shape setting!
+	  for (let i = 0; i < shapeNames.length; i++) {
+		if (cursorInRect(x, y, shapeButtons[i].x, shapeButtons[i].y, shapeButtons[i].edge, shapeButtons[i].edge)) {
+		  dragging = true;
+		  let newShape = new CanvasShape(x, y, 1, 1, currentColor, shapeButtons[i].shape)
+		  shapes.push(newShape)
+		  dragObject = newShape
+		  clickStartX = x;
+		  clickStartY = y;
+		}
+	  }
+  
+  
+	
+  }
+});
+
+canvas.addEventListener('mousemove', (e) => {
+  if (dragging) {
+	const rect = canvas.getBoundingClientRect();
+	dragObject.x += e.clientX - rect.left - clickStartX;
+	dragObject.y += e.clientY - rect.top - clickStartY;
+	clickStartX = e.clientX - rect.left;
+	clickStartY = e.clientY - rect.top;
+  }
+});
+
+canvas.addEventListener('mouseup', (eV) => {
+
+  if(currentMode != 'shapes') {
+    return;
+  }
+  
+  let mouse = getMouseCoords(canvas, eV)
+  if (cursorInRect(mouse.x, mouse.y, garbage.x, garbage.y, garbage.edge, garbage.edge)) {
+	shapes.pop() //Should always be the selected one
+  }
+  dragging = false;
+  dragObject = null
+});
+
+// Resize whenever window size changes
+window.addEventListener('resize', resizeCanvas);
+	
+	
+//TESTING DRAWING CODE
+
+  function startDrawLine(e) {
+  if(currentMode != 'draw' || e.offsetX <= 180) {
+    return;
+  }
+  drawing = true;
+  linePoints.points.push({ x: e.offsetX, y: e.offsetY });
+  }
+
+  function drawLine(e) {
+  if(currentMode != 'draw') {
+    return;
+  }
+    if (!drawing) return;
+    linePoints.points.push({ x: e.offsetX, y: e.offsetY });
+  }
+
+  function endDrawLine() {
+  if(currentMode != 'draw') {
+    return;
+  }
+    if (!drawing) return;
+    drawing = false;
+	
+	//create the path
+	let newPath = new Path2D()
+    for (let i = 0; i < linePoints.points.length - 1; i++) {
+      newPath.moveTo(linePoints.points[i].x, linePoints.points[i].y);
+      newPath.lineTo(linePoints.points[i + 1].x, linePoints.points[i + 1].y);
+    }
+    //newPath.closePath();
+	linePoints.path = newPath
+	
+	lines.push(linePoints)
+	linePoints = new LinePath([], 8, currentColor)
+  }
+
+
+
+function redrawPoints(line) {
+  if(line.points.length < 2) { return; }
+  //ctx.clearRect(0, 0, canvas.width, canvas.height); // optional: clear before redraw
+  ctx.beginPath();
+for (let i = 0; i < linePoints.points.length - 1; i++) {
+  ctx.moveTo(linePoints.points[i].x, linePoints.points[i].y);
+  ctx.lineTo(linePoints.points[i + 1].x, linePoints.points[i + 1].y);
+}
+  ctx.strokeStyle = line.color;
+  ctx.lineWidth = line.thickness;
+  ctx.stroke();
+  ctx.closePath();
+}
+
+function redrawPath(line) {
+  //ctx.clearRect(0, 0, canvas.width, canvas.height); // optional: clear before redraw
+  ctx.strokeStyle = line.color;
+  ctx.lineWidth = line.thickness;
+  ctx.stroke(line.path)
+}
+
+
+// Mouse events
+canvas.addEventListener('mousedown', startDrawLine);
+canvas.addEventListener('mousemove', drawLine);
+canvas.addEventListener('mouseup', endDrawLine);
+canvas.addEventListener('mouseleave', endDrawLine);	
+
   </script>
 </body>
 </html>
+<!-- 690, noice -->
