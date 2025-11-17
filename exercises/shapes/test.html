@@ -648,6 +648,7 @@ canvas.addEventListener('touchstart', (e) => {
 		
 		if (shapes[i].containsPoint(mx, my, ctx)) {
 		  dragging = true;
+		  dragObject = shapes[i]
 		  shapes[i].handleTouchStart(e); //Actually do the dragging here
 
 		  //push to back of array
