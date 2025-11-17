@@ -122,10 +122,12 @@ class ShapeSquare {
     }
     draw(context) {
 	
+        let scale = this.edge / 150
+
         context.save();
         context.translate(this.x + this.edge / 2, this.y + this.edge / 2);
         //context.rotate(this.rotation);
-        context.scale(0.4, 0.4);
+        context.scale(scale, scale);
         context.fillStyle = currentColor
 
         const path = getPath(this.shape);
@@ -166,8 +168,13 @@ class ColorSquare {
         context.fillRect(this.x + 2, this.y + 2, this.edge - 4, this.edge - 4)
 		
         if (this.outline) {
-            context.lineWidth = 2;
-            context.strokeStyle = "gray"
+            if(this.selected) {
+			  context.linewidth = 5
+              context.strokeStyle = "red"
+            } else  {
+              context.lineWidth = 2;
+              context.strokeStyle = "gray"
+			}
             context.strokeRect(this.x, this.y, this.edge, this.edge)
         }
     }
@@ -295,14 +302,14 @@ const ctx = canvas.getContext('2d');
 
 //Array for the shapes, with initial conditions
 const shapes = new Array()
-//shapes.push(new CanvasShape(300, 200, 1, 1, 'pink', 'diamond'))
-//shapes.push(new CanvasShape(100, 100, 1, 1, 'green', 'circle'))
+
 
 //Create the new color menu on the left!
 const colorButtons = new Array()
 for (let i = 0; i < colorNames.length; i++) {
   colorButtons.push(new ColorSquare(20, 100 + 80 * i, 60, colorNames[i], true))
 }
+colorButtons[0].select()
 
 //Now we do the shape buttons!!
 const shapeButtons = new Array()
@@ -310,15 +317,15 @@ for (let i = 0; i < shapeNames.length; i++) {
   shapeButtons.push(new ShapeSquare(100, 100 + 80 * i, 60, shapeNames[i], true))
 }
 
-//Garbage image icon
+/* GARBAGE START //Garbage image icon
 let gImg = new Image();
 gImg.src = 'img/garbage.png' //FIX THIS
-let garbage = new Square(500, 20, 60, gImg, true)
+let garbage = new Square(500, 20, 60, gImg, true)  GARBAGEEND*/
 
-//Reset image icon
+/* RESET START //Reset image icon
 let rImg = new Image();
 rImg.src = 'img/A.png' //FIX THIS
-let resetButton = new Square(420, 20, 60, rImg, true)
+let resetButton = new Square(420, 20, 60, rImg, true) RESETEND*/
 
 //Pencil image icon
 let pImg = new Image();
@@ -329,6 +336,28 @@ let drawButton = new Square(20, 15, 60, pImg, true)
 let eImg = new Image();
 eImg.src = 'img/eraser.png'
 let eraseButton = new Square(100, 15, 60, eImg, true)
+
+//sound images
+let soundImg = new Image();
+soundImg.src = 'img/sound.png'
+let noSoundImg = new Image();
+noSoundImg.src = 'img/nosound.png'
+let soundButton = new Square(20, 15, 60, soundImg, true)
+
+let screenshotImg = new Image();
+screenshotImg.src = 'img/screenshot.png'
+let screenshotButton = new Square(20, 15, 60, screenshotImg, true)
+
+let colorSounds = new Array()
+let shapeSounds = new Array()
+
+for (let i = 0; i < colorNames.length; i++) {
+  colorSounds.push(new Audio("sfx/" + colorNames[i] + "draft.wav"))
+}
+for (let i = 0; i < shapeNames.length; i++) {
+  shapeSounds.push(new Audio("sfx/" + shapeNames[i] + "draft.wav"))
+}
+
 
 // Optional: mouse drag for desktop testing
 let dragging = false;
@@ -346,13 +375,17 @@ let currentColor = 'red'
  let lines = new Array()
 let linePoints = new LinePath([], 8, currentColor); // store all points of a path
 
+let playAudio = true
 
 function resizeCanvas() {
   canvas.width = window.innerWidth - 2;
   canvas.height = window.innerHeight - 2;
   
-  garbage.x = window.innerWidth - 20 - garbage.edge
-  garbage.y = window.innerHeight - 20 - garbage.edge
+  //garbage.x = window.innerWidth - 20 - garbage.edge
+  //garbage.y = window.innerHeight - 20 - garbage.edge
+
+  resizeMenu();
+
   draw(); // redraw after resize
 }
 
@@ -372,11 +405,70 @@ let cursorInRect = (mouseX, mouseY, rectX, rectY, rectW, rectH) => {
     return xLine && yLine
 }
 
+
+function playSequence(sequence) {
+      let index = 0;
+
+      function playNext() {
+        if (index < sequence.length) {
+          const clip = sequence[index];
+          index++;
+
+          // Reset playback position
+          clip.currentTime = 0;
+
+          // Play and wait for it to finish
+          clip.onended = playNext;  // overwrite instead of addEventListener
+          clip.play();
+        }
+      }
+
+      playNext();
+    }
+
+
+function resizeMenu() {
+  //let border = 20 //Make border = 1/3rd the button size
+  //let buttonSize = Math.min((canvas.height - border * (colorNames.length + 2)) / (colorNames.length + 1))
+    
+  let buttonSize = Math.min((canvas.height / (colorNames.length + 5))) //12 borders = 4 more buttons
+  let border = Math.min(buttonSize / 3)
+
+  drawButton.x = border
+  drawButton.y = border
+  drawButton.edge = buttonSize
+
+  eraseButton.x = border * 2 + buttonSize
+  eraseButton.y = border
+  eraseButton.edge = buttonSize
+
+  for (let i = 0; i < colorNames.length; i++) {
+    colorButtons[i].x = border
+    colorButtons[i].y = border + (border + buttonSize) * (i + 1)
+    colorButtons[i].edge = buttonSize
+  }
+  for (let i = 0; i < shapeNames.length; i++) {
+    shapeButtons[i].x = border * 2 + buttonSize
+    shapeButtons[i].y = border + (border + buttonSize) * (i + 1)
+    shapeButtons[i].edge = buttonSize
+  }
+
+  soundButton.x = border * 2 + buttonSize
+  soundButton.y = border + (border + buttonSize) * (colorNames.length - 1)
+  soundButton.edge = buttonSize
+
+  screenshotButton.x = border * 2 + buttonSize
+  screenshotButton.y = border + (border + buttonSize) * (colorNames.length)
+  screenshotButton.edge = buttonSize
+
+
+}
+
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   
   //Draw the card interface on the right
-  garbage.draw(ctx)
+  //garbage.draw(ctx)
   shapes.forEach(e => {
 	e.render(ctx)
   })
@@ -387,25 +479,29 @@ function draw() {
   if(linePoints.points.length > 1)
     redrawPoints(linePoints)
 
+  let buttonSize = eraseButton.edge
+  let border = Math.min(buttonSize / 3)
+
+
   //Draw the menu on the left
   ctx.fillStyle = '#eeeeff'
-  ctx.fillRect(0, 0, 180, canvas.height)
+  ctx.fillRect(0, 0, border * 3 + buttonSize * 2, canvas.height)
   
   ctx.strokeStyle = 'grey';
   ctx.lineWidth = 2; // optional, makes it thicker
 
   // Draw vertical line at x = 100
   ctx.beginPath();
-  ctx.moveTo(180, 0);                // start at top (y=0)
-  ctx.lineTo(180, canvas.height);    // go down to bottom
+  ctx.moveTo(border * 3 + buttonSize * 2, 0);                // start at top (y=0)
+  ctx.lineTo(border * 3 + buttonSize * 2, canvas.height);    // go down to bottom
   ctx.stroke();
 
   ctx.beginPath();
-  ctx.moveTo(0, 85);                // start at top (y=0)
-  ctx.lineTo(180, 85);    // go down to bottom
+  ctx.moveTo(0, buttonSize + border * 3 / 2);                // start at top (y=0)
+  ctx.lineTo(border * 3 + buttonSize * 2, buttonSize + border * 3 / 2);    // go down to bottom
   ctx.stroke();
   
-  resetButton.draw(ctx)
+  //resetButton.draw(ctx)
   
   for (let i = 0; i < colorNames.length; i++) {
     colorButtons[i].draw(ctx)
@@ -417,6 +513,9 @@ function draw() {
   
   drawButton.draw(ctx)
   eraseButton.draw(ctx)
+  soundButton.draw(ctx)
+  screenshotButton.draw(ctx)
+
   /*
   //Draw a square for the drag object
   if(addShape.color == 'white') {
@@ -467,17 +566,22 @@ canvas.addEventListener("click", (e) => {
       const mx = e.clientX - rect.left;
       const my = e.clientY - rect.top;
 
-      // Reset button!!
+      /* RESET START// Reset button!!
 	  if (cursorInRect(mx, my, resetButton.x, resetButton.y, resetButton.edge, resetButton.edge)) {
 		shapes.length = 0
 		lines.length = 0
-	  }
+	  }*/
 	  
 	  //Color Setting!
 	  for (let i = 0; i < colorNames.length; i++) {
-		if (cursorInRect(mx, my, colorButtons[i].x, colorButtons[i].y, colorButtons[i].edge, colorButtons[i].edge)) {
-	      currentColor = colorButtons[i].color
+		if (cursorInRect(mx, my, colorButtons[i].x, colorButtons[i].y, colorButtons[i].edge, colorButtons[i].edge) && currentColor != colorButtons[i].color) {
+
+                  //deselect old one
+                  colorButtons[colorNames.indexOf(currentColor)].select()
+
+	          currentColor = colorButtons[i].color
 		  linePoints.color = colorButtons[i].color
+                  colorButtons[i].select()
 		}
 	  }
 	  
@@ -539,6 +643,16 @@ canvas.addEventListener("click", (e) => {
       draw();
     });
 
+    function saveScreenshot() {
+      //Rerender without menu/screenshot button?
+      const image = canvas.toDataURL('image/png');
+      const link = document.createElement('a');
+      link.href = image;
+      link.download = 'canvas-image.png';
+      link.click();
+      document.body.removeChild(link); // Remove after click
+    }
+
 canvas.addEventListener('mousedown', (e) => {
   const rect = canvas.getBoundingClientRect();
   const x = e.clientX - rect.left;
@@ -567,6 +681,10 @@ canvas.addEventListener('mousedown', (e) => {
 	  //push to back of array
 	  const [element] = shapes.splice(i, 1);
 	  shapes.push(element);
+
+          if(playAudio) {
+            playSequence([ colorSounds[colorNames.indexOf(element.color)], shapeSounds[shapeNames.indexOf(element.shape)]])
+          }
 	}
   }
   if(!dragging) {
@@ -580,6 +698,11 @@ canvas.addEventListener('mousedown', (e) => {
 		  dragObject = newShape
 		  clickStartX = x;
 		  clickStartY = y;
+
+
+                  if(playAudio) {
+                    playSequence([ colorSounds[colorNames.indexOf(newShape.color)], shapeSounds[shapeNames.indexOf(newShape.shape)]])
+                  }
 		}
 	  }
   
@@ -598,16 +721,28 @@ canvas.addEventListener('mousemove', (e) => {
   }
 });
 
+
 canvas.addEventListener('mouseup', (eV) => {
+
+
+  let mouse = getMouseCoords(canvas, eV)/*GARBAGESTART
+  if (cursorInRect(mouse.x, mouse.y, garbage.x, garbage.y, garbage.edge, garbage.edge)) {
+	shapes.pop() //Should always be the selected one
+  }GARBAGEEND*/
+
+  if (cursorInRect(mouse.x, mouse.y, soundButton.x, soundButton.y, soundButton.edge, soundButton.edge)) {
+    playAudio = !playAudio
+    if(playAudio) {soundButton.image = soundImg} else {soundButton.image = noSoundImg}
+  }
+
+  if (cursorInRect(mouse.x, mouse.y, screenshotButton.x, screenshotButton.y, screenshotButton.edge, screenshotButton.edge)) {
+    saveScreenshot();
+  }
 
   if(currentMode != 'shapes') {
     return;
   }
   
-  let mouse = getMouseCoords(canvas, eV)
-  if (cursorInRect(mouse.x, mouse.y, garbage.x, garbage.y, garbage.edge, garbage.edge)) {
-	shapes.pop() //Should always be the selected one
-  }
   dragging = false;
   dragObject = null
 });
@@ -687,4 +822,3 @@ canvas.addEventListener('mouseleave', endDrawLine);
   </script>
 </body>
 </html>
-<!-- 690, noice -->
