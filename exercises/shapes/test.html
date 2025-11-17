@@ -599,12 +599,12 @@ canvas.addEventListener('touchstart', (e) => {
 	  }
   }
   
-  if (cursorInRect(mouse.x, mouse.y, soundButton.x, soundButton.y, soundButton.edge, soundButton.edge)) {
+  if (cursorInRect(mx, my, soundButton.x, soundButton.y, soundButton.edge, soundButton.edge)) {
     playAudio = !playAudio
     if(playAudio) {soundButton.image = soundImg} else {soundButton.image = noSoundImg}
   }
 
-  if (cursorInRect(mouse.x, mouse.y, screenshotButton.x, screenshotButton.y, screenshotButton.edge, screenshotButton.edge)) {
+  if (cursorInRect(mx, my, screenshotButton.x, screenshotButton.y, screenshotButton.edge, screenshotButton.edge)) {
     saveScreenshot();
   }
 
