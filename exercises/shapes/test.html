@@ -645,7 +645,7 @@ canvas.addEventListener('touchstart', (e) => {
 		
 		if (shapes[i].containsPoint(mx, my, ctx)) {
 		  dragging = true;
-		  dragObject = shapes[i]
+		  shapes[i].handleTouchStart(e); //Actually do the dragging here
 
 		  //push to back of array
 		  const [element] = shapes.splice(i, 1);
@@ -657,7 +657,26 @@ canvas.addEventListener('touchstart', (e) => {
 		  i = shapes.length
 		}
 		
-		shapes[i].handleTouchStart(e); //Actually do the dragging here
+	  }
+	  if(!dragging) {
+		  //Shape setting!
+		  for (let i = 0; i < shapeNames.length; i++) {
+			if (cursorInRect(mx, my, shapeButtons[i].x, shapeButtons[i].y, shapeButtons[i].edge, shapeButtons[i].edge)) {
+			  dragging = true;
+			  let newShape = new CanvasShape(mx, my, 1, 1, currentColor, shapeButtons[i].shape)
+			  shapes.push(newShape)
+			  dragObject = newShape
+		      newShape.handleTouchStart(e); //Actually do the dragging here
+	
+	
+			  if(playAudio) {
+				playSequence([ colorSounds[colorNames.indexOf(newShape.color)], shapeSounds[shapeNames.indexOf(newShape.shape)]])
+			  }
+			}
+		  }
+	  
+	  
+		
 	  }
   }
   
