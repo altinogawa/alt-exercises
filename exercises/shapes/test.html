@@ -710,7 +710,7 @@ canvas.addEventListener('touchmove', (e) => {
 canvas.addEventListener('touchend', (e) => {
 
   if(drawing) {
-  
+    endDrawLine()
   }
 
   if(currentMode == 'shapes' && dragging) {
