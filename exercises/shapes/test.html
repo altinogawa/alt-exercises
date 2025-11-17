@@ -639,7 +639,18 @@ canvas.addEventListener('touchstart', (e) => {
 	e.offsetY = my
 	startDrawLine(e) //this will test the x-location for us
   }
-  else if(currentMode == 'shapes') {
+
+//Test here if we need to shift to shapes mode 
+if(currentMode != 'shapes') {
+    for (let i = 0; i < shapeNames.length; i++) {
+	  if (cursorInRect(mx, my, shapeButtons[i].x, shapeButtons[i].y, shapeButtons[i].edge, shapeButtons[i].edge)) {
+	    currentMode = 'shapes'
+	    if(drawButton.selected) drawButton.select()
+	    if(eraseButton.selected) eraseButton.select()
+	  }
+	}
+  }
+  if(currentMode == 'shapes') {
 	  const rect = canvas.getBoundingClientRect();
 	  const mx = e.touches[0].clientX - rect.left;
 	  const my = e.touches[0].clientY - rect.top;
