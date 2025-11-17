@@ -464,6 +464,8 @@ function resizeMenu() {
 
 }
 
+let menuWidth = 180
+
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   
@@ -482,23 +484,28 @@ function draw() {
   let buttonSize = eraseButton.edge
   let border = Math.min(buttonSize / 3)
 
+  menuWidth = border * 3 + buttonSize * 2
+
+  //Draw the white bg for the drawing area
+  ctx.fillStyle = '#ffffff'
+  ctx.fillRect(menuWidth, 0, canvas.width - menuWidth, canvas.height
 
   //Draw the menu on the left
   ctx.fillStyle = '#eeeeff'
-  ctx.fillRect(0, 0, border * 3 + buttonSize * 2, canvas.height)
+  ctx.fillRect(0, 0, menuWidth, canvas.height)
   
   ctx.strokeStyle = 'grey';
   ctx.lineWidth = 2; // optional, makes it thicker
 
   // Draw vertical line at x = 100
   ctx.beginPath();
-  ctx.moveTo(border * 3 + buttonSize * 2, 0);                // start at top (y=0)
-  ctx.lineTo(border * 3 + buttonSize * 2, canvas.height);    // go down to bottom
+  ctx.moveTo(menuWidth, 0);                // start at top (y=0)
+  ctx.lineTo(menuWidth, canvas.height);    // go down to bottom
   ctx.stroke();
 
   ctx.beginPath();
   ctx.moveTo(0, buttonSize + border * 3 / 2);                // start at top (y=0)
-  ctx.lineTo(border * 3 + buttonSize * 2, buttonSize + border * 3 / 2);    // go down to bottom
+  ctx.lineTo(menuWidth, buttonSize + border * 3 / 2);    // go down to bottom
   ctx.stroke();
   
   //resetButton.draw(ctx)
@@ -543,22 +550,153 @@ resizeCanvas();
 
 // Events!!
 canvas.addEventListener('touchstart', (e) => {
-  for (let i = shapes.length - 1; i >=0; i--) {
-	shapes[i].handleTouchStart(e);
+
+  const rect = canvas.getBoundingClientRect();
+  const mx = e.touches[0].clientX - rect.left;
+  const my = e.touches[0].clientY - rect.top;
+
+  //Color Setting!
+  for (let i = 0; i < colorNames.length; i++) {
+	if (cursorInRect(mx, my, colorButtons[i].x, colorButtons[i].y, colorButtons[i].edge, colorButtons[i].edge) && currentColor != colorButtons[i].color) {
+
+	  //deselect old one
+	  colorButtons[colorNames.indexOf(currentColor)].select()
+
+      currentColor = colorButtons[i].color
+	  linePoints.color = colorButtons[i].color
+	  colorButtons[i].select()
+	}
   }
+  
+  
+  //Pen mode toggle!!
+  if (cursorInRect(mx, my, drawButton.x, drawButton.y, drawButton.edge, drawButton.edge)) {
+	  if(!drawButton.selected) {
+		currentMode = 'draw'
+		drawButton.select()
+		if(eraseButton.selected) {
+		  eraseButton.select()
+		}
+	  }
+	  else {
+		currentMode = 'shapes'
+		drawButton.select()
+	  }
+  }
+  
+  //Erase mode toggle!!
+  if (cursorInRect(mx, my, eraseButton.x, eraseButton.y, eraseButton.edge, eraseButton.edge)) {
+	  if(!eraseButton.selected) {
+		currentMode = 'erase'
+		eraseButton.select()
+		if(drawButton.selected) {
+		  drawButton.select()
+		}
+	  }
+	  else {
+		currentMode = 'shapes'
+		eraseButton.select()
+	  }
+  }
+  
+  if (cursorInRect(mouse.x, mouse.y, soundButton.x, soundButton.y, soundButton.edge, soundButton.edge)) {
+    playAudio = !playAudio
+    if(playAudio) {soundButton.image = soundImg} else {soundButton.image = noSoundImg}
+  }
+
+  if (cursorInRect(mouse.x, mouse.y, screenshotButton.x, screenshotButton.y, screenshotButton.edge, screenshotButton.edge)) {
+    saveScreenshot();
+  }
+
+  if(currentMode == 'erase') {
+	let found = false;
+	for(let i = lines.length - 1; i >= 0; i--) {
+	  if(found) { return; }
+	  if(lines[i].path != null) { 
+	  if(ctx.isPointInStroke(lines[i].path, mx, my)) {
+		lines.splice(i, 1)
+		found = true
+	  }}
+	}
+	
+	if(!found) {
+	  //Look for shapes to destroy indiscriminately
+	  for(let i = shapes.length - 1; i >= 0; i--) {
+		if(found) break;
+		if(shapes[i].containsPoint(mx, my, ctx)) {
+		  //destroy!
+		  found = true
+		  shapes.splice(i, 1);
+		}
+	  }
+	}
+  }
+  else if(currentMode == 'draw') {
+    e.offsetX = mx
+	e.offsetY = my
+	startDrawLine(e) //this will test the x-location for us
+  }
+  else if(currentMode == 'shapes') {
+	  const rect = canvas.getBoundingClientRect();
+	  const mx = e.touches[0].clientX - rect.left;
+	  const my = e.touches[0].clientY - rect.top;
+	  
+	  for (let i = shapes.length - 1; i >=0; i--) {
+		
+		if (shapes[i].containsPoint(mx, my, ctx)) {
+		  dragging = true;
+		  dragObject = shapes[i]
+
+		  //push to back of array
+		  const [element] = shapes.splice(i, 1);
+		  shapes.push(element);
+
+			  if(playAudio) {
+				playSequence([ colorSounds[colorNames.indexOf(element.color)], shapeSounds[shapeNames.indexOf(element.shape)]])
+			  }
+		  i = shapes.length
+		}
+		
+		shapes[i].handleTouchStart(e); //Actually do the dragging here
+	  }
+  }
+  
+  draw();
+
+
+
 });
 
 canvas.addEventListener('touchmove', (e) => {
   e.preventDefault(); // Prevent scrolling
-  for (let i = shapes.length - 1; i >=0; i--) {
-	shapes[i].handleTouchMove(e);
+  
+  if(drawing) {
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.touches[0].clientX - rect.left;
+    const my = e.touches[0].clientY - rect.top;
+  
+    e.offsetX = mx
+	e.offsetY = my
+	startDrawLine(e)
+  }
+  
+  if(dragging) {
+    dragObject.handleTouchMove(e);
   }
 });
 
 canvas.addEventListener('touchend', (e) => {
-  for (let i = shapes.length - 1; i >=0; i--) {
-	shapes[i].handleTouchEnd(e);
+
+  if(drawing) {
+  
   }
+
+  if(currentMode == 'shapes' && dragging) {
+    dragObject.handleTouchEnd(e);
+    dragging = false;
+    dragObject = null
+  }
+  
 });
 
 canvas.addEventListener("click", (e) => {
@@ -566,12 +704,6 @@ canvas.addEventListener("click", (e) => {
       const mx = e.clientX - rect.left;
       const my = e.clientY - rect.top;
 
-      /* RESET START// Reset button!!
-	  if (cursorInRect(mx, my, resetButton.x, resetButton.y, resetButton.edge, resetButton.edge)) {
-		shapes.length = 0
-		lines.length = 0
-	  }*/
-	  
 	  //Color Setting!
 	  for (let i = 0; i < colorNames.length; i++) {
 		if (cursorInRect(mx, my, colorButtons[i].x, colorButtons[i].y, colorButtons[i].edge, colorButtons[i].edge) && currentColor != colorButtons[i].color) {
@@ -643,15 +775,15 @@ canvas.addEventListener("click", (e) => {
       draw();
     });
 
-    function saveScreenshot() {
-      //Rerender without menu/screenshot button?
-      const image = canvas.toDataURL('image/png');
-      const link = document.createElement('a');
-      link.href = image;
-      link.download = 'canvas-image.png';
-      link.click();
-      document.body.removeChild(link); // Remove after click
-    }
+function saveScreenshot() {
+  //Rerender without menu/screenshot button?
+  const image = canvas.toDataURL('image/png');
+  const link = document.createElement('a');
+  link.href = image;
+  link.download = 'canvas-image.png';
+  link.click();
+  document.body.removeChild(link); // Remove after click
+}
 
 canvas.addEventListener('mousedown', (e) => {
   const rect = canvas.getBoundingClientRect();
@@ -725,10 +857,7 @@ canvas.addEventListener('mousemove', (e) => {
 canvas.addEventListener('mouseup', (eV) => {
 
 
-  let mouse = getMouseCoords(canvas, eV)/*GARBAGESTART
-  if (cursorInRect(mouse.x, mouse.y, garbage.x, garbage.y, garbage.edge, garbage.edge)) {
-	shapes.pop() //Should always be the selected one
-  }GARBAGEEND*/
+  let mouse = getMouseCoords(canvas, eV)
 
   if (cursorInRect(mouse.x, mouse.y, soundButton.x, soundButton.y, soundButton.edge, soundButton.edge)) {
     playAudio = !playAudio
@@ -754,25 +883,25 @@ window.addEventListener('resize', resizeCanvas);
 //TESTING DRAWING CODE
 
   function startDrawLine(e) {
-  if(currentMode != 'draw' || e.offsetX <= 180) {
-    return;
-  }
-  drawing = true;
-  linePoints.points.push({ x: e.offsetX, y: e.offsetY });
+	if(currentMode != 'draw' || e.offsetX <= menuWidth) {
+	return;
+	}
+	drawing = true;
+	linePoints.points.push({ x: e.offsetX, y: e.offsetY });
   }
 
   function drawLine(e) {
-  if(currentMode != 'draw') {
-    return;
-  }
-    if (!drawing) return;
-    linePoints.points.push({ x: e.offsetX, y: e.offsetY });
+	if(currentMode != 'draw') {
+	  return;
+	}
+	if (!drawing) return;
+	linePoints.points.push({ x: e.offsetX, y: e.offsetY });
   }
 
   function endDrawLine() {
-  if(currentMode != 'draw') {
-    return;
-  }
+    if(currentMode != 'draw') {
+      return;
+    }
     if (!drawing) return;
     drawing = false;
 	
