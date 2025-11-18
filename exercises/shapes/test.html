@@ -816,16 +816,16 @@ function saveCroppedScreenshot() {
   const tempCtx = tempCanvas.getContext('2d');
 
   // Set its size to the cropped area
-  tempCanvas.width = canvas.width - menuWidth; // exclude leftmost 100px
+  tempCanvas.width = canvas.width - menuWidth - 1; // exclude leftmost 100px
   tempCanvas.height = canvas.height;
 
   // Draw the cropped portion of the original canvas
   tempCtx.drawImage(
     canvas,          // source canvas
-    menuWidth, 0,          // start cropping at x=menuWidth, y=0
-    canvas.width - menuWidth, canvas.height, // crop width & height
+    menuWidth + 1, 0,          // start cropping at x=menuWidth, y=0
+    canvas.width - menuWidth - 1, canvas.height, // crop width & height
     0, 0,            // destination x,y
-    canvas.width - menuWidth, canvas.height  // destination width & height
+    canvas.width - menuWidth - 1, canvas.height  // destination width & height
   );
 
   // Export the cropped image
