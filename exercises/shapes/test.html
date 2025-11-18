@@ -469,6 +469,10 @@ let menuWidth = 180
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   
+  //Draw the white bg for the drawing area
+  ctx.fillStyle = '#ffffff'
+  ctx.fillRect(menuWidth, 0, canvas.width - menuWidth, canvas.height)
+	
   //Draw the card interface on the right
   //garbage.draw(ctx)
   shapes.forEach(e => {
@@ -485,10 +489,6 @@ function draw() {
   let border = Math.min(buttonSize / 3)
 
   menuWidth = border * 3 + buttonSize * 2
-
-  //Draw the white bg for the drawing area
-  //ctx.fillStyle = '#ffffff'
-  //ctx.fillRect(menuWidth, 0, canvas.width - menuWidth, canvas.height)
 
   //Draw the menu on the left
   ctx.fillStyle = '#eeeeff'
