@@ -263,8 +263,8 @@ class CanvasShape {
         rotation: shape.rotation
       };
     }
-    shape.touchStartState = s_createStateShape();
-    shape.touchStartIndex = shapes.indexOf(this)
+    shape.touchStartState = s_createStateShape(shape);
+    shape.touchStartIndex = shapes.indexOf(shape)
   }
 
   function s_handleTouchMove(e, shape) {
@@ -281,9 +281,9 @@ class CanvasShape {
       const newAngle = Math.atan2(t2.clientY - t1.clientY, t2.clientX - t1.clientX);
 
       const scaleFactor = newDistance / shape.touchStartInfo.distance;
-      this.scaleX = shape.touchStartInfo.scaleX * scaleFactor;
-      this.scaleY = shape.touchStartInfo.scaleY * scaleFactor;
-      this.rotation = shape.touchStartInfo.rotation + (newAngle - shape.touchStartInfo.angle);
+      shape.scaleX = shape.touchStartInfo.scaleX * scaleFactor;
+      shape.scaleY = shape.touchStartInfo.scaleY * scaleFactor;
+      shape.rotation = shape.touchStartInfo.rotation + (newAngle - shape.touchStartInfo.angle);
     }
   }
 
