@@ -845,6 +845,48 @@ canvas.addEventListener('touchstart', (e) => {
   if (cursorInRect(mx, my, screenshotButton.x, screenshotButton.y, screenshotButton.edge, screenshotButton.edge)) {
     saveCroppedScreenshot();
   }
+	
+  //Save!!
+  if (cursorInRect(mx, my, saveButton.x, saveButton.y, saveButton.edge, saveButton.edge)) {
+		saveScene(shapes, lines)
+  } 
+	
+  //Load!!
+  if (cursorInRect(mx, my, loadButton.x, loadButton.y, loadButton.edge, loadButton.edge)) {
+		loadScene(shapes, lines)
+  }
+
+  //Undo!!
+  if (cursorInRect(mx, my, undoButton.x, undoButton.y, undoButton.edge, undoButton.edge)) {
+		if(undoHistory.length > 0) {
+		  let command = undoHistory.pop()
+		  command.undo()
+		  AddToRedo(command)
+		  if(undoHistory.length > 0 && undoHistory[undoHistory.length - 1].shape == command.shape && undoHistory[undoHistory.length - 1] instanceof CreateShapeCommand && command instanceof ShapeCommand) {
+			command = undoHistory.pop()
+			command.undo()
+			AddToRedo(command)
+		  }
+		  ResetDoButtons()
+		}
+  }
+  
+  //Redo!!
+  if (cursorInRect(mx, my, redoButton.x, redoButton.y, redoButton.edge, redoButton.edge)) {
+		if(redoHistory.length > 0) {
+		  let command = redoHistory.pop()
+		  command.redo()
+		  AddToUndo(command)
+		  if(redoHistory.length > 0 && redoHistory[redoHistory.length - 1].shape == command.shape && command instanceof CreateShapeCommand && redoHistory[redoHistory.length - 1] instanceof ShapeCommand) {
+			command = redoHistory.pop()
+			command.redo()
+			AddToUndo(command)
+		  }
+		  ResetDoButtons()
+		}
+  }	 
+
+
 
   if(currentMode == 'erase') {
 	let found = false;
