@@ -78,11 +78,11 @@ class CanvasItem {
 /*START FUNCTION EXTERNALIZATION - CONSIDER RENAMING!!*/
   function s_render(image, ctx) {
     ctx.save();
-    ctx.translate(image.x - DEFAULT_EDGE / 2, image.y - DEFAULT_EDGE / 2);
+    ctx.translate(image.x, image.y);
     ctx.rotate(image.rotation);
     ctx.scale(image.scaleX, image.scaleY);
 
-    ctx.drawImage(image.image, 0, 0, DEFAULT_EDGE, DEFAULT_EDGE)
+    ctx.drawImage(image.image,  -DEFAULT_EDGE / 2,  -DEFAULT_EDGE / 2, DEFAULT_EDGE, DEFAULT_EDGE)
 	
     ctx.restore();
   }
@@ -91,7 +91,7 @@ class CanvasItem {
     ctx.save();
     ctx.scale(1 / image.scaleX, 1 / image.scaleY);
     ctx.rotate(-1 * image.rotation);
-    ctx.translate(-1 * (image.x - DEFAULT_EDGE / 2), -1 * (image.y - DEFAULT_EDGE / 2));
+    ctx.translate(-1 * image.x, -1 * image.y);
 
     //Transform the mouse xy to properly match it
     const matrix = ctx.getTransform(); // DOMMatrix
@@ -99,7 +99,7 @@ class CanvasItem {
 
     ctx.restore();
 	
-    return cursorInRect(newPoint.x, newPoint.y, 0, 0, DEFAULT_EDGE, DEFAULT_EDGE);
+    return cursorInRect(newPoint.x - DEFAULT_EDGE / 2, newPoint.y - DEFAULT_EDGE / 2, 0, 0, DEFAULT_EDGE, DEFAULT_EDGE);
   }
 
   function s_transformPoint(x, y, m) {
