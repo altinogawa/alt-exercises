@@ -199,92 +199,104 @@ class CanvasShape {
     this.shape = shape;
 
     this.touchStartInfo = null;
+    this.touchStartState = null;
+    this.touchStartIndex = -1
   }
 
+}
 
-  render(ctx) {
+/*START FUNCTION EXTERNALIZATION - CONSIDER RENAMING!!*/
+  function s_render(shape, ctx) {
     ctx.save();
-    ctx.translate(this.x, this.y);
-    ctx.rotate(this.rotation);
-    ctx.scale(this.scaleX, this.scaleY);
-    ctx.fillStyle = this.color;
+    ctx.translate(shape.x, shape.y);
+    ctx.rotate(shape.rotation);
+    ctx.scale(shape.scaleX, shape.scaleY);
+    ctx.fillStyle = shape.color;
 
-    const path = getPath(this.shape);
+    const path = getPath(shape.shape);
     
 
     ctx.fill(path);
     ctx.restore();
   }
 
-  containsPoint(x, y, ctx) {
+  function s_containsPoint(shape, x, y, ctx) {
     ctx.save();
-    ctx.scale(1 / this.scaleX, 1 / this.scaleY);
-    ctx.rotate(-1 * this.rotation);
-    ctx.translate(-1 * this.x, -1 * this.y);
+    ctx.scale(1 / shape.scaleX, 1 / shape.scaleY);
+    ctx.rotate(-1 * shape.rotation);
+    ctx.translate(-1 * shape.x, -1 * shape.y);
 
 
     
 
-    const path = getPath(this.shape)
+    const path = getPath(shape.shape)
 
     //Transform the mouse xy to properly match it
     const matrix = ctx.getTransform(); // DOMMatrix
-    const newPoint = this.transformPoint(x, y, matrix)
+    const newPoint = s_transformPoint(x, y, matrix)
 
     ctx.restore();
 
     return ctx.isPointInPath(path, newPoint.x, newPoint.y);
   }
 
-  transformPoint(x, y, m) {
+  function s_transformPoint(x, y, m) {
     return {
         x: m.a * x + m.c * y + m.e,
         y: m.b * x + m.d * y + m.f
     };
   }
 
-  handleTouchStart(e) {
+  function s_handleTouchStart(e, shape) {
     if (e.touches.length === 1) {
-      this.touchStartInfo = {
+      shape.touchStartInfo = {
         x: e.touches[0].clientX,
         y: e.touches[0].clientY
       };
     } else if (e.touches.length === 2) {
       const [t1, t2] = e.touches;
-      this.touchStartInfo = {
+      shape.touchStartInfo = {
         distance: Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY),
         angle: Math.atan2(t2.clientY - t1.clientY, t2.clientX - t1.clientX),
-        scaleX: this.scaleX,
-        scaleY: this.scaleY,
-        rotation: this.rotation
+        scaleX: shape.scaleX,
+        scaleY: shape.scaleY,
+        rotation: shape.rotation
       };
     }
+    shape.touchStartState = s_createStateShape();
+    shape.touchStartIndex = shapes.indexOf(this)
   }
 
-  handleTouchMove(e) {
-    if (e.touches.length === 1 && this.touchStartInfo) {
-      const dx = e.touches[0].clientX - this.touchStartInfo.x;
-      const dy = e.touches[0].clientY - this.touchStartInfo.y;
-      this.x += dx;
-      this.y += dy;
-      this.touchStartInfo.x = e.touches[0].clientX;
-      this.touchStartInfo.y = e.touches[0].clientY;
-    } else if (e.touches.length === 2 && this.touchStartInfo) {
+  function s_handleTouchMove(e, shape) {
+    if (e.touches.length === 1 && shape.touchStartInfo) {
+      const dx = e.touches[0].clientX - shape.touchStartInfo.x;
+      const dy = e.touches[0].clientY - shape.touchStartInfo.y;
+      shape.x += dx;
+      shape.y += dy;
+      shape.touchStartInfo.x = e.touches[0].clientX;
+      shape.touchStartInfo.y = e.touches[0].clientY;
+    } else if (e.touches.length === 2 && shape.touchStartInfo) {
       const [t1, t2] = e.touches;
       const newDistance = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
       const newAngle = Math.atan2(t2.clientY - t1.clientY, t2.clientX - t1.clientX);
 
-      const scaleFactor = newDistance / this.touchStartInfo.distance;
-      this.scaleX = this.touchStartInfo.scaleX * scaleFactor;
-      this.scaleY = this.touchStartInfo.scaleY * scaleFactor;
-      this.rotation = this.touchStartInfo.rotation + (newAngle - this.touchStartInfo.angle);
+      const scaleFactor = newDistance / shape.touchStartInfo.distance;
+      this.scaleX = shape.touchStartInfo.scaleX * scaleFactor;
+      this.scaleY = shape.touchStartInfo.scaleY * scaleFactor;
+      this.rotation = shape.touchStartInfo.rotation + (newAngle - shape.touchStartInfo.angle);
     }
   }
 
-  handleTouchEnd(e) {
-    this.touchStartInfo = null;
+  function s_handleTouchEnd(e, shape) {
+    shape.touchStartInfo = null;
+    AddToUndo(new ShapeCommand(shape, shape.touchStartIndex, shape.touchStartState, s_createStateShape(shape)), true)
   }
-}
+
+  function s_createStateShape(shape) {
+    let newState = new ShapeState(shape.x, shape.y, shape.rotation, shape.scaleX, shape.scaleY)
+    return newState
+  }
+/*END THE FUNCTION EXTERNALIZATION*/
 
 class LinePath {
     constructor(points, thickness, color) {
@@ -295,6 +307,177 @@ class LinePath {
 
     }
 }
+
+class ShapeState {
+  constructor(x, y, rot, scaleX, scaleY) {
+    this.x = x
+    this.y = y
+    this.rotation = rot
+    this.scaleX = scaleX
+    this.scaleY = scaleY
+  }
+}
+
+//Command class for history
+class ShapeCommand {
+    constructor(shape, index, state1, state2) {
+        this.shape = shape
+        this.index1 = index
+        this.state1 = state1
+        this.state2 = state2
+    }
+
+    undo() {
+      this.shape.x = this.state1.x
+      this.shape.y = this.state1.y
+      this.shape.scaleX = this.state1.scaleX
+      this.shape.scaleY = this.state1.scaleY
+      this.shape.rotation = this.state1.rotation
+
+      if(shapes.indexOf(this.shape) !== this.index1) {
+        //NEED TO MOVE IT TO THIS INDEX
+        shapes.splice(shapes.indexOf(this.shape), 1);
+        shapes.splice(this.index1, 0, this.shape)
+      }
+    }
+
+    redo() {
+      this.shape.x = this.state2.x
+      this.shape.y = this.state2.y
+      this.shape.scaleX = this.state2.scaleX
+      this.shape.scaleY = this.state2.scaleY
+      this.shape.rotation = this.state2.rotation
+
+      if(shapes.indexOf(this.shape) != shapes.length - 1) {
+        //NEED TO MOVE IT TO THE END!
+        shapes.splice(shapes.indexOf(this.shape), 1);
+        shapes.push(this.shape)
+      }
+    }
+}
+
+class CreateShapeCommand {
+    constructor(shape) {
+        this.shape = shape
+    }
+
+    undo() {
+      let index = shapes.indexOf(this.shape);
+
+      if (index != -1) {
+        shapes.splice(index, 1);
+      }
+    }
+
+    redo() {
+      let index = shapes.indexOf(this.shape);
+
+      if (index == -1) {
+        shapes.push(this.shape);
+      }
+    }
+}
+
+class DeleteShapeCommand {
+    constructor(shape, index) {
+        this.shape = shape
+        this.index = index
+    }
+
+    undo() {
+      let i = shapes.indexOf(this.shape);
+
+      if (i == -1) {
+        shapes.splice(this.index, 0, this.shape);
+      }
+    }
+
+    redo() {
+      if (shapes[this.index] == this.shape) {
+        shapes.splice(this.index, 1);
+      }
+    }
+}
+
+class CreateLineCommand {
+    constructor(line) {
+        this.line = line
+    }
+
+    undo() {
+      let index = lines.indexOf(this.line);
+
+      if (index != -1) {
+        lines.splice(index, 1);
+      }
+    }
+
+    redo() {
+      let index = lines.indexOf(this.line);
+
+      if (index == -1) {
+        lines.push(this.line);
+      }
+    }
+}
+
+class DeleteLineCommand {
+    constructor(line, index) {
+        this.line = line
+        this.index = index
+    }
+
+    undo() {
+      let i = lines.indexOf(this.line);
+
+      if (i == -1) {
+        lines.splice(this.index, 0, this.line);
+      }
+    }
+
+    redo() {
+      if (lines[this.index] == this.line) {
+        lines.splice(this.index, 1);
+      }
+    }
+}
+
+function AddToUndo(command, forceClear = false) {
+  undoHistory.push(command)
+  if(undoHistory.length > MAX_HIST) {
+    undoHistory.splice(0, undoHistory.length - MAX_HIST)
+  }
+  if(forceClear) {
+    redoHistory.length = 0
+  }
+  ResetDoButtons()
+}
+
+function AddToRedo(command) {
+  redoHistory.push(command)
+  if(redoHistory.length > MAX_HIST)  {
+    redoHistory.splice(0, redoHistory.length - MAX_HIST)
+  }
+  ResetDoButtons()
+}
+
+function ResetDoButtons() {
+  if(undoHistory.length > 0) {
+    undoButton.image = unImg
+  } else {
+    undoButton.image = nunImg
+  }
+  if(redoHistory.length > 0) {
+    redoButton.image = reImg
+  } else {
+    redoButton.image = nreImg
+  }
+}
+
+//History stuff
+const undoHistory = new Array()
+const redoHistory = new Array()
+const MAX_HIST = 200
 
 //Canvas 
 const canvas = document.getElementById('canvas');
@@ -330,19 +513,39 @@ let resetButton = new Square(420, 20, 60, rImg, true) RESETEND*/
 //Pencil image icon
 let pImg = new Image();
 pImg.src = 'img/pencil.png'
-let drawButton = new Square(20, 15, 60, pImg, true)
+let drawButton = new Square(1020, 15, 60, pImg, true)
 
 //Eraser image icon
 let eImg = new Image();
 eImg.src = 'img/eraser.png'
-let eraseButton = new Square(100, 15, 60, eImg, true)
+let eraseButton = new Square(1100, 15, 60, eImg, true)
+
+//Undo image icon
+let unImg = new Image();
+unImg.src = 'img/undo.png'
+let nunImg = new Image();
+nunImg.src = 'img/notundo.png'
+let undoButton = new Square(20, 15, 60, nunImg, true)
+
+//Redo image icon
+let reImg = new Image();
+reImg.src = 'img/redo.png'
+let nreImg = new Image();
+nreImg.src = 'img/notredo.png'
+let redoButton = new Square(100, 15, 60, nreImg, true)
+
+//Save image icon
+let saveButton = new Square(1020, 95, 60, unImg, true)
+
+//Load image icon
+let loadButton = new Square(1100, 95, 60, unImg, true)
 
 //sound images
 let soundImg = new Image();
 soundImg.src = 'img/sound.png'
 let noSoundImg = new Image();
 noSoundImg.src = 'img/nosound.png'
-let soundButton = new Square(20, 15, 60, soundImg, true)
+let soundButton = new Square(20, 15, 60, noSoundImg, true)
 
 let screenshotImg = new Image();
 screenshotImg.src = 'img/screenshot.png'
@@ -364,6 +567,8 @@ let dragging = false;
 let dragObject = null;
 let clickStartX = 0;
 let clickStartY = 0;
+let dragIndex = -1;
+let dragState = null
 
 
 const modes = ['shapes', 'draw', 'erase']
@@ -375,7 +580,7 @@ let currentColor = 'red'
  let lines = new Array()
 let linePoints = new LinePath([], 8, currentColor); // store all points of a path
 
-let playAudio = true
+let playAudio = false
 
 function resizeCanvas() {
   canvas.width = window.innerWidth - 2;
@@ -434,13 +639,21 @@ function resizeMenu() {
   let buttonSize = Math.min((canvas.height / (colorNames.length + 5))) //12 borders = 4 more buttons
   let border = Math.min(buttonSize / 3)
 
-  drawButton.x = border
+  drawButton.x = border + 1000
   drawButton.y = border
   drawButton.edge = buttonSize
 
-  eraseButton.x = border * 2 + buttonSize
+  eraseButton.x = border * 2 + buttonSize + 1000
   eraseButton.y = border
   eraseButton.edge = buttonSize
+  //TEMPORARY
+  undoButton.x = border
+  undoButton.y = border
+  undoButton.edge = buttonSize
+
+  redoButton.x = border * 2 + buttonSize
+  redoButton.y = border
+  redoButton.edge = buttonSize
 
   for (let i = 0; i < colorNames.length; i++) {
     colorButtons[i].x = border
@@ -476,7 +689,7 @@ function draw() {
   //Draw the card interface on the right
   //garbage.draw(ctx)
   shapes.forEach(e => {
-	e.render(ctx)
+	s_render(e, ctx)
   })
 
   lines.forEach(e => {
@@ -520,6 +733,13 @@ function draw() {
   
   drawButton.draw(ctx)
   eraseButton.draw(ctx)
+  
+  undoButton.draw(ctx)
+  redoButton.draw(ctx)
+  
+  saveButton.draw(ctx)
+  loadButton.draw(ctx)
+
   soundButton.draw(ctx)
   screenshotButton.draw(ctx)
 
@@ -538,7 +758,7 @@ function draw() {
   addShape.render(ctx)
   */
   if(dragObject != null) {
-    dragObject.render(ctx)
+    s_render(dragObject, ctx)
   }
 
   requestAnimationFrame(draw);
@@ -616,7 +836,9 @@ canvas.addEventListener('touchstart', (e) => {
 	for(let i = lines.length - 1; i >= 0; i--) {
 	  if(found) { return; }
 	  if(lines[i].path != null) { 
+          ctx.lineWidth = lines[i].thickness;
 	  if(ctx.isPointInStroke(lines[i].path, mx, my)) {
+                AddToUndo(new DeleteLineCommand(lines[i], i))
 		lines.splice(i, 1)
 		found = true
 	  }}
@@ -626,10 +848,16 @@ canvas.addEventListener('touchstart', (e) => {
 	  //Look for shapes to destroy indiscriminately
 	  for(let i = shapes.length - 1; i >= 0; i--) {
 		if(found) break;
-		if(shapes[i].containsPoint(mx, my, ctx)) {
+		if(s_containsPoint(shapes[i], mx, my, ctx)) {
+
+
+                  //Add to undo history
+                  AddToUndo(new DeleteShapeCommand(shapes[i], i), true)
+
 		  //destroy!
 		  found = true
 		  shapes.splice(i, 1);
+
 		}
 	  }
 	}
@@ -657,10 +885,10 @@ if(currentMode != 'shapes') {
 	  
 	  for (let i = shapes.length - 1; i >=0; i--) {
 		
-		if (shapes[i].containsPoint(mx, my, ctx)) {
+		if (s_containsPoint(shapes[i], mx, my, ctx)) {
 		  dragging = true;
 		  dragObject = shapes[i]
-		  shapes[i].handleTouchStart(e); //Actually do the dragging here
+		  s_handleTouchStart(e, shapes[i]); //Actually do the dragging here
 
 		  //push to back of array
 		  const [element] = shapes.splice(i, 1);
@@ -681,8 +909,13 @@ if(currentMode != 'shapes') {
 			  let newShape = new CanvasShape(mx, my, 1, 1, currentColor, shapeButtons[i].shape)
 			  shapes.push(newShape)
 			  dragObject = newShape
-		      newShape.handleTouchStart(e); //Actually do the dragging here
+		      s_handleTouchStart(e, newShape); //Actually do the dragging here
 	
+
+                      //Add to undo history
+                      AddToUndo(new CreateShapeCommand(newShape), true)
+
+
 	
 			  if(playAudio) {
 				playSequence([ colorSounds[colorNames.indexOf(newShape.color)], shapeSounds[shapeNames.indexOf(newShape.shape)]])
@@ -715,7 +948,7 @@ canvas.addEventListener('touchmove', (e) => {
   }
   
   if(dragging) {
-    dragObject.handleTouchMove(e);
+    s_handleTouchMove(e, dragObject);
   }
 });
 
@@ -726,7 +959,7 @@ canvas.addEventListener('touchend', (e) => {
   }
 
   if(currentMode == 'shapes' && dragging) {
-    dragObject.handleTouchEnd(e);
+    s_handleTouchEnd(e, dragObject);
     dragging = false;
     dragObject = null
   }
@@ -783,13 +1016,57 @@ if(touching) { touching = false; return; }
 		  }
 	  }
 	  
+          //THIS NEEDS TO BE EXTENDED TO THE TOUCH FEATURES!
+          //Undo!!
+	  if (cursorInRect(mx, my, undoButton.x, undoButton.y, undoButton.edge, undoButton.edge)) {
+            if(undoHistory.length > 0) {
+              let command = undoHistory.pop()
+              command.undo()
+              AddToRedo(command)
+              if(undoHistory.length > 0 && undoHistory[undoHistory.length - 1].shape == command.shape && undoHistory[undoHistory.length - 1] instanceof CreateShapeCommand && command instanceof ShapeCommand) {
+                command = undoHistory.pop()
+                command.undo()
+                AddToRedo(command)
+              }
+              ResetDoButtons()
+            }
+	  }
+	  
+	  //Redo!!
+	  if (cursorInRect(mx, my, redoButton.x, redoButton.y, redoButton.edge, redoButton.edge)) {
+            if(redoHistory.length > 0) {
+              let command = redoHistory.pop()
+              command.redo()
+              AddToUndo(command)
+              if(redoHistory.length > 0 && redoHistory[redoHistory.length - 1].shape == command.shape && command instanceof CreateShapeCommand && redoHistory[redoHistory.length - 1] instanceof ShapeCommand) {
+                command = redoHistory.pop()
+                command.redo()
+                AddToUndo(command)
+              }
+              ResetDoButtons()
+            }
+	  }	 
+ 
+	  //Save!!
+	  if (cursorInRect(mx, my, saveButton.x, saveButton.y, saveButton.edge, saveButton.edge)) {
+            saveScene(shapes, lines)
+	  } 
+
+	  //Load!!
+	  if (cursorInRect(mx, my, loadButton.x, loadButton.y, loadButton.edge, loadButton.edge)) {
+            loadScene(shapes, lines)
+	  }
+
+
 	  if(currentMode == 'erase') {
 		let found = false;
 	    for(let i = lines.length - 1; i >= 0; i--) {
 		  if(found) { return; }
-		  if(lines[i].path != null) { 
+		  if(lines[i].path != null) {
+                  ctx.lineWidth = lines[i].thickness;
 		  if(ctx.isPointInStroke(lines[i].path, mx, my)) {
-		    lines.splice(i, 1)
+                        AddToUndo(new DeleteLineCommand(lines[i], i))
+		        lines.splice(i, 1)
 			found = true
 		  }}
 		}
@@ -798,7 +1075,12 @@ if(touching) { touching = false; return; }
 		  //Look for shapes to destroy indiscriminately
 		  for(let i = shapes.length - 1; i >= 0; i--) {
 			if(found) break;
-		    if(shapes[i].containsPoint(mx, my, ctx)) {
+		    if(s_containsPoint(shapes[i], mx, my, ctx)) {
+
+                      //Add to undo history
+                      AddToUndo(new DeleteShapeCommand(shapes[i], i), true)
+
+
 			  //destroy!
 			  found = true
 			  shapes.splice(i, 1);
@@ -868,11 +1150,14 @@ if(touching) return;
   }
   for (let i = shapes.length - 1; i >=0; i--) {
 	if(dragging) return;
-	if (shapes[i].containsPoint(x, y, ctx)) {
+	if (s_containsPoint(shapes[i], x, y, ctx)) {
 	  dragging = true;
 	  dragObject = shapes[i]
 	  clickStartX = x;
 	  clickStartY = y;
+          dragIndex = shapes.indexOf(shapes[i])
+          dragState = s_createStateShape(shapes[i])
+                 	
 
 	  //push to back of array
 	  const [element] = shapes.splice(i, 1);
@@ -894,7 +1179,12 @@ if(touching) return;
 		  dragObject = newShape
 		  clickStartX = x;
 		  clickStartY = y;
+                  dragIndex = shapes.indexOf(newShape)
+                  dragState = s_createStateShape(newShape)
 
+
+                      //Add to undo history
+                      AddToUndo(new CreateShapeCommand(newShape), true)
 
                   if(playAudio) {
                     playSequence([ colorSounds[colorNames.indexOf(newShape.color)], shapeSounds[shapeNames.indexOf(newShape.shape)]])
@@ -935,9 +1225,16 @@ if(touching) return;
   if(currentMode != 'shapes') {
     return;
   }
-  
-  dragging = false;
-  dragObject = null
+
+  //Add to undo history
+  if(dragObject != null) {
+    AddToUndo(new ShapeCommand(dragObject, dragIndex, dragState, s_createStateShape(dragObject)), true)
+
+    dragging = false;
+    dragObject = null
+    dragIndex = -1
+    dragState = null
+  }
 });
 
 // Resize whenever window size changes
@@ -966,20 +1263,19 @@ window.addEventListener('resize', resizeCanvas);
     if(currentMode != 'draw') {
       return;
     }
-    if (!drawing) return;
-    drawing = false;
-	
-	//create the path
-	let newPath = new Path2D()
-    for (let i = 0; i < linePoints.points.length - 1; i++) {
-      newPath.moveTo(linePoints.points[i].x, linePoints.points[i].y);
-      newPath.lineTo(linePoints.points[i + 1].x, linePoints.points[i + 1].y);
-    }
-    //newPath.closePath();
-	linePoints.path = newPath
-	
+        if (!drawing) return;
+
+        drawing = false;
+	  
+
+        //CLEAN THE LINE
+        linePoints.points = cleanPolyline(linePoints.points)
+        linePoints.path = null
+
 	lines.push(linePoints)
+        AddToUndo(new CreateLineCommand(linePoints))
 	linePoints = new LinePath([], 8, currentColor)
+
   }
 
 
@@ -994,16 +1290,36 @@ for (let i = 0; i < linePoints.points.length - 1; i++) {
 }
   ctx.strokeStyle = line.color;
   ctx.lineWidth = line.thickness;
+  ctx.lineCap = 'round'
   ctx.stroke();
   ctx.closePath();
 }
 
 function redrawPath(line) {
+  //Set up the path if it's not set up already!
+  if(line.path == null || !(line.path instanceof Path2D)) {
+	//create the path
+	let newPath = new Path2D()
+        for (let i = 0; i < line.points.length - 1; i++) {
+          newPath.moveTo(line.points[i].x, line.points[i].y);
+          newPath.lineTo(line.points[i + 1].x, line.points[i + 1].y);
+        }
+        //newPath.closePath();
+
+
+	line.path = newPath
+  }
+	
+
+
   //ctx.clearRect(0, 0, canvas.width, canvas.height); // optional: clear before redraw
   ctx.strokeStyle = line.color;
   ctx.lineWidth = line.thickness;
+  ctx.lineCap = 'round'
   ctx.stroke(line.path)
 }
+
+
 
 
 // Mouse events
@@ -1011,6 +1327,172 @@ canvas.addEventListener('mousedown', startDrawLine);
 canvas.addEventListener('mousemove', drawLine);
 canvas.addEventListener('mouseup', endDrawLine);
 canvas.addEventListener('mouseleave', endDrawLine);	
+
+
+
+
+
+
+
+
+
+/* RDP Algorithm to smooth the drawing lines, thank you Copilot!! */
+
+
+// Utility: squared distance from point C to segment AB
+function pointSegmentDistSq(A, B, C) {
+  const vx = B.x - A.x, vy = B.y - A.y;
+  const wx = C.x - A.x, wy = C.y - A.y;
+  const c1 = vx * wx + vy * wy;
+  const c2 = vx * vx + vy * vy;
+  let t = c2 !== 0 ? c1 / c2 : 0;
+  t = Math.max(0, Math.min(1, t));
+  const px = A.x + t * vx, py = A.y + t * vy;
+  const dx = C.x - px, dy = C.y - py;
+  return dx * dx + dy * dy;
+}
+
+// Ramer–Douglas–Peucker simplification
+function simplifyRDP(points, epsilon = 1.0) {
+  if (!points || points.length <= 2) return points.slice();
+  const epsSq = epsilon * epsilon;
+
+  function rdp(startIdx, endIdx, out) {
+    let maxDistSq = -1;
+    let index = -1;
+    const A = points[startIdx];
+    const B = points[endIdx];
+
+    for (let i = startIdx + 1; i < endIdx; i++) {
+      const dSq = pointSegmentDistSq(A, B, points[i]);
+      if (dSq > maxDistSq) {
+        maxDistSq = dSq;
+        index = i;
+      }
+    }
+
+    if (maxDistSq > epsSq) {
+      rdp(startIdx, index, out);
+      rdp(index, endIdx, out);
+    } else {
+      out.push(points[startIdx]); // keep start
+      // end will be added by upper recursion or finalization
+    }
+  }
+
+  const out = [];
+  rdp(0, points.length - 1, out);
+  out.push(points[points.length - 1]); // ensure last point
+  return out;
+}
+
+// Optional: drop points that are too close to previous
+function dedupeNear(points, minDist = 0.5) {
+  const minSq = minDist * minDist;
+  const out = [];
+  let prev = null;
+  for (const p of points) {
+    if (!prev) {
+      out.push(p);
+      prev = p;
+    } else {
+      const dx = p.x - prev.x, dy = p.y - prev.y;
+      if (dx * dx + dy * dy >= minSq) {
+        out.push(p);
+        prev = p;
+      }
+    }
+  }
+  return out;
+}
+
+// Optional: simple moving average smoothing
+function smooth(points, window = 3) {
+  if (window < 2) return points.slice();
+  const half = Math.floor(window / 2);
+  const out = [];
+  for (let i = 0; i < points.length; i++) {
+    let sx = 0, sy = 0, count = 0;
+    for (let k = -half; k <= half; k++) {
+      const j = Math.min(points.length - 1, Math.max(0, i + k));
+      sx += points[j].x; sy += points[j].y; count++;
+    }
+    out.push({ x: sx / count, y: sy / count });
+  }
+  return out;
+}
+
+// Example pipeline:
+function cleanPolyline(rawPoints, { minSpacing = 0.5, smoothWindow = 3, epsilon = 2.0 } = {}) {
+  const deduped = dedupeNear(rawPoints, minSpacing);
+  const smoothed = smoothWindow > 1 ? smooth(deduped, smoothWindow) : deduped;
+  const simplified = simplifyRDP(smoothed, epsilon);
+  return simplified;
+}
+
+
+
+
+
+
+//QUICK SAVE/LOAD CODE
+
+
+
+const SAVE_KEY = 'shapesProject.v1';
+
+function serializeScene(shapes, lines) {
+  // Make sure these are pure JSON-serializable (no methods/functions)
+  const payload = {
+    version: 1,
+    savedAt: new Date().toISOString(),
+    shapes,
+    lines,
+  };
+  return JSON.stringify(payload);
+}
+
+function saveScene(shapes, lines) {
+  try {
+    //POSSIBLY CATCH OVERWRITE HERE
+
+    const json = serializeScene(shapes, lines);
+    localStorage.setItem(SAVE_KEY, json);
+    console.log("Save successful")
+  } catch (err) {
+    console.error('Save failed', err);
+  }
+}
+
+
+function loadScene() {
+  //POSSIBLY CATCH OVERWRITE HERE
+
+
+  const json = localStorage.getItem(SAVE_KEY);
+  if (!json) return null;
+  try {
+    const data = JSON.parse(json);
+    if (data.version !== 1) {
+      // Migrate here if you change schema later
+      // data = migrate(data)
+    }
+
+    console.log("Load successful")
+
+    //Here we can just load stuff
+    shapes.splice(0, shapes.length, ...data.shapes);
+    lines.splice(0, lines.length, ...data.lines);
+    undoHistory.length = 0
+    redoHistory.length = 0
+
+
+    return;
+  } catch (err) {
+    console.error('Load failed', err);
+    return null;
+  }
+}
 
   </script>
 </body>
