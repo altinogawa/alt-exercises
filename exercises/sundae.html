@@ -99,7 +99,7 @@ class CanvasItem {
 
     ctx.restore();
 	
-    return cursorInRect(newPoint.x - DEFAULT_EDGE / 2, newPoint.y - DEFAULT_EDGE / 2, 0, 0, DEFAULT_EDGE, DEFAULT_EDGE);
+    return cursorInRect(newPoint.x, newPoint.y,  -DEFAULT_EDGE / 2,  -DEFAULT_EDGE / 2, DEFAULT_EDGE, DEFAULT_EDGE);
   }
 
   function s_transformPoint(x, y, m) {
