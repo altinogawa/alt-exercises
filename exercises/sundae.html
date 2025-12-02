@@ -294,11 +294,6 @@ function draw() {
   ctx.lineTo(menuWidth, canvas.height);    // go down to bottom
   ctx.stroke();
 
-  ctx.beginPath();
-  ctx.moveTo(0, buttonSize + border * 3 / 2);                // start at top (y=0)
-  ctx.lineTo(menuWidth, buttonSize + border * 3 / 2);    // go down to bottom
-  ctx.stroke();
-  
   //resetButton.draw(ctx)
   
   for (let i = 0; i < itemNames.length; i++) {
