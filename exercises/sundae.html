@@ -399,7 +399,7 @@ canvas.addEventListener('touchstart', (e) => {
 	  }
 	  if(!dragging) {
 		  //Shape setting!
-		  for (let i = 0; i < shapeNames.length; i++) {
+		  for (let i = 0; i < itemNames.length; i++) {
 			if (cursorInRect(mx, my, itemButtons[i].x, itemButtons[i].y, itemButtons[i].edge, itemButtons[i].edge)) {
 			  dragging = true;
 			  let newItem = new CanvasItem(mx - DEFAULT_EDGE / 2, my - DEFAULT_EDGE / 2, itemButtons[i].image, 1, 1)
