@@ -535,10 +535,14 @@ nreImg.src = 'img/notredo.png'
 let redoButton = new Square(100, 15, 60, nreImg, true)
 
 //Save image icon
-let saveButton = new Square(1020, 95, 60, unImg, true)
+let saveImg = new Image();
+saveImg.src = 'img/save.png'
+let saveButton = new Square(1020, 95, 60, saveImg, true)
 
 //Load image icon
-let loadButton = new Square(1100, 95, 60, unImg, true)
+let loadImg = new Image();
+loadImg.src = 'img/load.png'
+let loadButton = new Square(1100, 95, 60, loadImg, true)
 
 //sound images
 let soundImg = new Image();
@@ -636,45 +640,51 @@ function resizeMenu() {
   //let border = 20 //Make border = 1/3rd the button size
   //let buttonSize = Math.min((canvas.height - border * (colorNames.length + 2)) / (colorNames.length + 1))
     
-  let buttonSize = Math.min((canvas.height / (colorNames.length + 5))) //12 borders = 4 more buttons
+  let buttonSize = Math.min((canvas.height / (colorNames.length + 8))) //12 borders = 4 more buttons
   let border = Math.min(buttonSize / 3)
 
-  drawButton.x = border + 1000
+  drawButton.x = border
   drawButton.y = border
   drawButton.edge = buttonSize
 
-  eraseButton.x = border * 2 + buttonSize + 1000
+  eraseButton.x = border * 2 + buttonSize
   eraseButton.y = border
   eraseButton.edge = buttonSize
-  //TEMPORARY
+  
   undoButton.x = border
-  undoButton.y = border
+  undoButton.y = border * 2 + buttonSize
   undoButton.edge = buttonSize
 
   redoButton.x = border * 2 + buttonSize
-  redoButton.y = border
+  redoButton.y = border * 2 + buttonSize
   redoButton.edge = buttonSize
 
   for (let i = 0; i < colorNames.length; i++) {
     colorButtons[i].x = border
-    colorButtons[i].y = border + (border + buttonSize) * (i + 1)
+    colorButtons[i].y = border + (border + buttonSize) * (i + 2)
     colorButtons[i].edge = buttonSize
   }
   for (let i = 0; i < shapeNames.length; i++) {
     shapeButtons[i].x = border * 2 + buttonSize
-    shapeButtons[i].y = border + (border + buttonSize) * (i + 1)
+    shapeButtons[i].y = border + (border + buttonSize) * (i + 2)
     shapeButtons[i].edge = buttonSize
   }
 
   soundButton.x = border * 2 + buttonSize
-  soundButton.y = border + (border + buttonSize) * (colorNames.length - 1)
+  soundButton.y = border + (border + buttonSize) * (colorNames.length)
   soundButton.edge = buttonSize
 
   screenshotButton.x = border * 2 + buttonSize
-  screenshotButton.y = border + (border + buttonSize) * (colorNames.length)
+  screenshotButton.y = border + (border + buttonSize) * (colorNames.length + 1)
   screenshotButton.edge = buttonSize
 
+  saveButton.x = border
+  saveButton.y = canvas.height - border - buttonSize
+  saveButton.edge = buttonSize
 
+  loadButton.x = border * 2 + buttonSize
+  loadButton.y = canvas.height - border - buttonSize
+  loadButton.edge = buttonSize
 }
 
 let menuWidth = 180
@@ -717,8 +727,13 @@ function draw() {
   ctx.stroke();
 
   ctx.beginPath();
-  ctx.moveTo(0, buttonSize + border * 3 / 2);                // start at top (y=0)
-  ctx.lineTo(menuWidth, buttonSize + border * 3 / 2);    // go down to bottom
+  ctx.moveTo(0, buttonSize * 2 + border * 5 / 2);                // start at top (y=0)
+  ctx.lineTo(menuWidth, buttonSize * 2 + border * 5 / 2);    // go down to bottom
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo(0, canvas.height - buttonSize - border * 3 / 2);
+  ctx.lineTo(menuWidth, canvas.height - buttonSize - border * 3 / 2);
   ctx.stroke();
   
   //resetButton.draw(ctx)
