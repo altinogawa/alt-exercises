@@ -141,9 +141,9 @@ class CanvasItem {
       const newAngle = Math.atan2(t2.clientY - t1.clientY, t2.clientX - t1.clientX);
 
       const scaleFactor = newDistance / item.touchStartInfo.distance;
-      this.scaleX = item.touchStartInfo.scaleX * scaleFactor;
-      this.scaleY = item.touchStartInfo.scaleY * scaleFactor;
-      this.rotation = item.touchStartInfo.rotation + (newAngle - item.touchStartInfo.angle);
+      item.scaleX = item.touchStartInfo.scaleX * scaleFactor;
+      item.scaleY = item.touchStartInfo.scaleY * scaleFactor;
+      item.rotation = item.touchStartInfo.rotation + (newAngle - item.touchStartInfo.angle);
     }
   }
 
