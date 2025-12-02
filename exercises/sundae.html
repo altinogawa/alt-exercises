@@ -78,7 +78,7 @@ class CanvasItem {
 /*START FUNCTION EXTERNALIZATION - CONSIDER RENAMING!!*/
   function s_render(image, ctx) {
     ctx.save();
-    ctx.translate(image.x, image.y);
+    ctx.translate(image.x - DEFAULT_EDGE / 2, image.y - DEFAULT_EDGE / 2);
     ctx.rotate(image.rotation);
     ctx.scale(image.scaleX, image.scaleY);
 
@@ -91,7 +91,7 @@ class CanvasItem {
     ctx.save();
     ctx.scale(1 / image.scaleX, 1 / image.scaleY);
     ctx.rotate(-1 * image.rotation);
-    ctx.translate(-1 * image.x, -1 * image.y);
+    ctx.translate(-1 * (image.x - DEFAULT_EDGE / 2), -1 * (image.y - DEFAULT_EDGE / 2));
 
     //Transform the mouse xy to properly match it
     const matrix = ctx.getTransform(); // DOMMatrix
@@ -402,7 +402,7 @@ canvas.addEventListener('touchstart', (e) => {
 		  for (let i = 0; i < itemNames.length; i++) {
 			if (cursorInRect(mx, my, itemButtons[i].x, itemButtons[i].y, itemButtons[i].edge, itemButtons[i].edge)) {
 			  dragging = true;
-			  let newItem = new CanvasItem(mx - DEFAULT_EDGE / 2, my - DEFAULT_EDGE / 2, itemButtons[i].image, 1, 1)
+			  let newItem = new CanvasItem(mx, my, itemButtons[i].image, 1, 1)
 			  items.push(newItem)
 			  dragObject = newItem
 		      s_handleTouchStart(e, newItem); //Actually do the dragging here
@@ -517,7 +517,7 @@ if(touching) return;
 	  for (let i = 0; i < itemNames.length; i++) {
 		if (cursorInRect(x, y, itemButtons[i].x, itemButtons[i].y, itemButtons[i].edge, itemButtons[i].edge)) {
 		  dragging = true;
-		  let newItem = new CanvasItem(x - DEFAULT_EDGE / 2, y - DEFAULT_EDGE / 2, itemButtons[i].image, 1, 1)
+		  let newItem = new CanvasItem(x, y, itemButtons[i].image, 1, 1)
 		  items.push(newItem)
 		  dragObject = newItem
 		  clickStartX = x;
