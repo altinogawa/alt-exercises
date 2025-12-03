@@ -756,7 +756,8 @@ function draw() {
   loadButton.draw(ctx)
   
   ctx.font = '10px Arial'
-  ctx.fillText("セーブ", border * 4 / 3, canvas.height - border + 1)
+  ctx.fillText("セーブ", border * 4 / 3 - 2, canvas.height - border + 5)
+  ctx.fillText("ロード", border * 7 / 3 - 2 + buttonSize, canvas.height - border + 5)
 	
   soundButton.draw(ctx)
   screenshotButton.draw(ctx)
