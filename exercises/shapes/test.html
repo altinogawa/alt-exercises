@@ -848,12 +848,18 @@ canvas.addEventListener('touchstart', (e) => {
 	
   //Save!!
   if (cursorInRect(mx, my, saveButton.x, saveButton.y, saveButton.edge, saveButton.edge)) {
-		saveScene(shapes, lines)
+		let userResponse = confirm("このカードをセーブしますか？前のセーブをけします。")
+		    if(userResponse) { 
+				saveScene(shapes, lines)
+			}
   } 
 	
   //Load!!
   if (cursorInRect(mx, my, loadButton.x, loadButton.y, loadButton.edge, loadButton.edge)) {
-		loadScene(shapes, lines)
+		let userResponse = confirm("セーブからカードをロードしますか？今のカードをけします。")
+		    if(userResponse) { 
+                loadScene(shapes, lines)
+			}
   }
 
   //Undo!!
