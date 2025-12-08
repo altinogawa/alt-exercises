@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Make a pizza!</title>
+  <style>
+    canvas {
+      border: 1px solid #ccc;
+      touch-action: none; /* Prevent default gestures */
+	  display: block; /* removes inline spacing */
+    }
+	body, html {
+      margin: 0;
+      padding: 0;
+    }
+  </style>
+  <link rel="shortcut icon" type="image/x-icon" href="../favicon.ico?">
+</head>
+<body>
+  <canvas id="canvas"></canvas>
+  <script>
+  
+let itemNames = ['onion', 'greenpepper', 'pepperoni', 'mushroom', 'tomato', 'ham', 'pineapple'];
+
+//Square Class
+class Square {
+    constructor(x, y, edge, image, outline) {
+        this.image = image
+        this.x = x
+        this.y = y
+        this.edge = edge
+        this.selected = false
+        this.active = false
+        this.outline = outline
+
+    }
+    draw(context) {
+        context.drawImage(this.image, this.x, this.y, this.edge, this.edge)
+        if (this.outline) {
+			if(this.selected) {
+			  context.linewidth = 5
+              context.strokeStyle = "red"
+            } else  {
+              context.lineWidth = 2;
+              context.strokeStyle = "gray"
+			}
+            context.strokeRect(this.x, this.y, this.edge, this.edge)
+        }
+    }
+    select() {
+        this.selected = !this.selected
+    }
+
+    activate() {
+        this.active = !this.active
+    }
+}
+
+const DEFAULT_EDGE = 100
+
+//Shape Class
+class CanvasItem {
+  constructor(x, y, image, scaleX = 1, scaleY = 1) {
+    this.x = x;
+    this.y = y;
+    this.scaleX = scaleX;
+    this.scaleY = scaleY;
+    this.rotation = 0;
+    this.image = image;
+
+    this.touchStartInfo = null;
+    this.touchStartState = null;
+    this.touchStartIndex = -1
+  }
+
+}
+
+/*START FUNCTION EXTERNALIZATION - CONSIDER RENAMING!!*/
+  function s_render(image, ctx) {
+    ctx.save();
+    ctx.translate(image.x, image.y);
+    ctx.rotate(image.rotation);
+    ctx.scale(image.scaleX, image.scaleY);
+
+    ctx.drawImage(image.image,  -DEFAULT_EDGE / 2,  -DEFAULT_EDGE / 2, DEFAULT_EDGE, DEFAULT_EDGE)
+	
+    ctx.restore();
+  }
+
+  function s_containsPoint(image, x, y, ctx) {
+    ctx.save();
+    ctx.scale(1 / image.scaleX, 1 / image.scaleY);
+    ctx.rotate(-1 * image.rotation);
+    ctx.translate(-1 * image.x, -1 * image.y);
+
+    //Transform the mouse xy to properly match it
+    const matrix = ctx.getTransform(); // DOMMatrix
+    const newPoint = s_transformPoint(x, y, matrix)
+
+    ctx.restore();
+	
+    return cursorInRect(newPoint.x, newPoint.y,  -DEFAULT_EDGE / 2,  -DEFAULT_EDGE / 2, DEFAULT_EDGE, DEFAULT_EDGE);
+  }
+
+  function s_transformPoint(x, y, m) {
+    return {
+        x: m.a * x + m.c * y + m.e,
+        y: m.b * x + m.d * y + m.f
+    };
+  }
+
+  function s_handleTouchStart(e, item) {
+    if (e.touches.length === 1) {
+      item.touchStartInfo = {
+        x: e.touches[0].clientX,
+        y: e.touches[0].clientY
+      };
+    } else if (e.touches.length === 2) {
+      const [t1, t2] = e.touches;
+      item.touchStartInfo = {
+        distance: Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY),
+        angle: Math.atan2(t2.clientY - t1.clientY, t2.clientX - t1.clientX),
+        scaleX: item.scaleX,
+        scaleY: item.scaleY,
+        rotation: item.rotation
+      };
+    }
+  }
+
+  function s_handleTouchMove(e, item) {
+    if (e.touches.length === 1 && item.touchStartInfo) {
+      const dx = e.touches[0].clientX - item.touchStartInfo.x;
+      const dy = e.touches[0].clientY - item.touchStartInfo.y;
+      item.x += dx;
+      item.y += dy;
+      item.touchStartInfo.x = e.touches[0].clientX;
+      item.touchStartInfo.y = e.touches[0].clientY;
+    } else if (e.touches.length === 2 && item.touchStartInfo) {
+      const [t1, t2] = e.touches;
+      const newDistance = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+      const newAngle = Math.atan2(t2.clientY - t1.clientY, t2.clientX - t1.clientX);
+
+      const scaleFactor = newDistance / item.touchStartInfo.distance;
+      item.scaleX = item.touchStartInfo.scaleX * scaleFactor;
+      item.scaleY = item.touchStartInfo.scaleY * scaleFactor;
+      item.rotation = item.touchStartInfo.rotation + (newAngle - item.touchStartInfo.angle);
+    }
+  }
+
+  function s_handleTouchEnd(e, item) {
+    item.touchStartInfo = null;
+  }
+
+/*END THE FUNCTION EXTERNALIZATION*/
+
+//Canvas 
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+
+//Array for the items, with initial conditions
+const items = new Array()
+
+let onionImg = new Image();
+onionImg.src = 'img/onion.png'
+let greenpepperImg = new Image();
+greenpepperImg.src = 'img/greenpepper.png'
+let pepperoniImg = new Image();
+pepperoniImg.src = 'img/pepperoni.png'
+let mushroomImg = new Image();
+mushroomImg.src = 'img/mushroom.png'
+let tomatoImg = new Image();
+tomatoImg.src = 'img/tomato.png'
+let hamImg = new Image();
+hamImg.src = 'img/ham.png'
+let pineappleImg = new Image();
+pineappleImg.src = 'img/pineapple.png'
+
+//Create the new color menu on the left!
+const itemButtons = new Array()
+itemButtons.push(new Square(20, 20, 60, onionImg, true))
+itemButtons.push(new Square(20, 100, 60, greenpepperImg, true))
+itemButtons.push(new Square(20, 180, 60, pepperoniImg, true))
+itemButtons.push(new Square(20, 260, 60, mushroomImg, true))
+itemButtons.push(new Square(20, 340, 60, tomatoImg, true))
+itemButtons.push(new Square(20, 420, 60, hamImg, true))
+itemButtons.push(new Square(20, 500, 60, pineappleImg, true))
+
+
+//Eraser image icon
+let eImg = new Image();
+eImg.src = 'img/eraser.png'
+let eraseButton = new Square(1100, 15, 60, eImg, true)
+
+
+let pizzaImg = new Image()
+pizzaImg.src = 'img/pizza.png'
+
+let pizzaSquare = new Square(200, 0, 600, pizzaImg)
+
+// Optional: mouse drag for desktop testing
+let dragging = false;
+let dragObject = null;
+let clickStartX = 0;
+let clickStartY = 0;
+let dragIndex = -1;
+let dragState = null
+
+
+const modes = ['items', 'erase']
+let currentMode = 'items'
+
+//TESTING DRAWING CODE
+ let drawing = false;
+
+let playAudio = false
+
+function resizeCanvas() {
+  canvas.width = window.innerWidth - 2;
+  canvas.height = window.innerHeight - 2;
+  
+  resizeMenu();
+
+  draw(); // redraw after resize
+}
+
+//Functions!!
+let getMouseCoords = (canvas, event) => {
+    let canvasCoords = canvas.getBoundingClientRect()
+    return {
+        x: event.pageX - canvasCoords.left,
+        y: event.pageY - canvasCoords.top
+    }
+}
+
+let cursorInRect = (mouseX, mouseY, rectX, rectY, rectW, rectH) => {
+    let xLine = mouseX > rectX && mouseX < rectX + rectW
+    let yLine = mouseY > rectY && mouseY < rectY + rectH
+
+    return xLine && yLine
+}
+
+function resizeMenu() {
+
+  let buttonSize = Math.min((canvas.height / (itemNames.length + 5))) //12 borders = 4 more buttons
+  let border = Math.min(buttonSize / 3)
+
+  eraseButton.x = border 
+  eraseButton.y = border + (border + buttonSize) * (itemNames.length)
+  eraseButton.edge = buttonSize
+
+  for (let i = 0; i < itemNames.length; i++) {
+    itemButtons[i].x = border
+    itemButtons[i].y = border + (border + buttonSize) * (i)
+    itemButtons[i].edge = buttonSize
+  }
+
+}
+
+let menuWidth = 100
+
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  
+  //Draw the white bg for the drawing area
+  ctx.fillStyle = '#ffffff'
+  ctx.fillRect(menuWidth, 0, canvas.width - menuWidth, canvas.height)
+	  
+  pizzaSquare.draw(ctx)
+
+  //Draw the card interface on the right
+  //garbage.draw(ctx)
+  items.forEach(e => {
+	s_render(e, ctx)
+  })
+
+  let buttonSize = eraseButton.edge
+  let border = Math.min(buttonSize / 3)
+
+  menuWidth = border * 2 + buttonSize
+
+  //Draw the menu on the left
+  ctx.fillStyle = '#eeeeff'
+  ctx.fillRect(0, 0, menuWidth, canvas.height)
+  
+  ctx.strokeStyle = 'grey';
+  ctx.lineWidth = 2; // optional, makes it thicker
+
+  // Draw vertical line at x = 100
+  ctx.beginPath();
+  ctx.moveTo(menuWidth, 0);                // start at top (y=0)
+  ctx.lineTo(menuWidth, canvas.height);    // go down to bottom
+  ctx.stroke();
+
+  //resetButton.draw(ctx)
+  
+  for (let i = 0; i < itemNames.length; i++) {
+    itemButtons[i].draw(ctx)
+  }
+
+  eraseButton.draw(ctx)
+  
+  if(dragObject != null) {
+    s_render(dragObject, ctx)
+  }
+
+
+  requestAnimationFrame(draw);
+}
+
+//Baby's first draw and resize call
+draw();
+resizeCanvas();
+
+//Really strange bug, mousedown, mouseup and click are all activating after touchend
+let touching = false
+	  
+// Events!!
+canvas.addEventListener('touchstart', (e) => {
+  touching = true
+  const rect = canvas.getBoundingClientRect();
+  const mx = e.touches[0].clientX - rect.left;
+  const my = e.touches[0].clientY - rect.top;
+
+  //Erase mode toggle!!
+  if (cursorInRect(mx, my, eraseButton.x, eraseButton.y, eraseButton.edge, eraseButton.edge)) {
+	  if(!eraseButton.selected) {
+		currentMode = 'erase'
+		eraseButton.select()
+		if(drawButton.selected) {
+		  drawButton.select()
+		}
+	  }
+	  else {
+		currentMode = 'items'
+		eraseButton.select()
+	  }
+  }
+  
+  if(currentMode == 'erase') {
+	let found = false;
+	  
+	if(!found) {
+	  //Look for items to destroy indiscriminately
+	  for(let i = items.length - 1; i >= 0; i--) {
+		if(found) break;
+		if(s_containsPoint(items[i], mx, my, ctx)) {
+
+		  //destroy!
+		  found = true
+		  items.splice(i, 1);
+
+		}
+	  }
+	}
+  }
+
+  //Test here if we need to shift to items mode 
+  if(currentMode != 'items') {
+    for (let i = 0; i < itemNames.length; i++) {
+	  if (cursorInRect(mx, my, itemButtons[i].x, itemButtons[i].y, itemButtons[i].edge, itemButtons[i].edge)) {
+	    currentMode = 'items'
+	    if(eraseButton.selected) eraseButton.select()
+	  }
+	}
+  }
+  if(currentMode == 'items') {
+	  const rect = canvas.getBoundingClientRect();
+	  const mx = e.touches[0].clientX - rect.left;
+	  const my = e.touches[0].clientY - rect.top;
+	  
+	  for (let i = items.length - 1; i >=0; i--) {
+		
+		if (s_containsPoint(items[i], mx, my, ctx)) {
+		  dragging = true;
+		  dragObject = items[i]
+		  s_handleTouchStart(e, items[i]); //Actually do the dragging here
+
+		  //push to back of array
+		  const [element] = items.splice(i, 1);
+		  items.push(element);
+
+		  i = 0
+		}
+		
+	  }
+	  if(!dragging) {
+		  //Shape setting!
+		  for (let i = 0; i < itemNames.length; i++) {
+			if (cursorInRect(mx, my, itemButtons[i].x, itemButtons[i].y, itemButtons[i].edge, itemButtons[i].edge)) {
+			  dragging = true;
+			  let newItem = new CanvasItem(mx, my, itemButtons[i].image, 1, 1)
+			  items.push(newItem)
+			  dragObject = newItem
+		      s_handleTouchStart(e, newItem); //Actually do the dragging here
+	
+			}
+		  }
+	  
+	  
+		
+	  }
+  }
+  
+  draw();
+
+
+
+});
+
+canvas.addEventListener('touchmove', (e) => {
+  e.preventDefault(); // Prevent scrolling
+  
+  if(dragging) {
+    s_handleTouchMove(e, dragObject);
+  }
+});
+
+canvas.addEventListener('touchend', (e) => {
+
+  if(currentMode == 'items' && dragging) {
+    s_handleTouchEnd(e, dragObject);
+    dragging = false;
+    dragObject = null
+  }
+  
+});
+
+canvas.addEventListener("click", (e) => {
+if(touching) { touching = false; return; }
+      const rect = canvas.getBoundingClientRect();
+      const mx = e.clientX - rect.left;
+      const my = e.clientY - rect.top;
+
+	  //Erase mode toggle!!
+	  if (cursorInRect(mx, my, eraseButton.x, eraseButton.y, eraseButton.edge, eraseButton.edge)) {
+		  if(!eraseButton.selected) {
+			currentMode = 'erase'
+			eraseButton.select()
+		  }
+		  else {
+			currentMode = 'items'
+			eraseButton.select()
+		  }
+	  }
+	  
+	  if(currentMode == 'erase') {
+		let found = false;
+		
+		if(!found) {
+		  //Look for items to destroy indiscriminately
+		  for(let i = items.length - 1; i >= 0; i--) {
+			if(found) break;
+		    if(s_containsPoint(items[i], mx, my, ctx)) {
+
+			  //destroy!
+			  found = true
+			  items.splice(i, 1);
+			}
+		  }
+		}
+	  }
+	  
+      draw();
+    });
+	
+canvas.addEventListener('mousedown', (e) => {
+if(touching) return;
+  const rect = canvas.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+  if(currentMode != 'items') {
+    let found = false;
+    for (let i = 0; i < itemNames.length; i++) {
+	  if (cursorInRect(x, y, itemButtons[i].x, itemButtons[i].y, itemButtons[i].edge, itemButtons[i].edge)) {
+        found = true
+	    currentMode = 'items'
+	    if(eraseButton.selected) eraseButton.select()
+	  }
+	}
+	if (!found) 
+	  return;
+  }
+  for (let i = items.length - 1; i >=0; i--) {
+	if(dragging) return;
+	if (s_containsPoint(items[i], x, y, ctx)) {
+	  dragging = true;
+	  dragObject = items[i]
+	  clickStartX = x;
+	  clickStartY = y;
+
+	  //push to back of array
+	  const [element] = items.splice(i, 1);
+	  items.push(element);
+
+          if(playAudio) {
+            playSequence([ colorSounds[colorNames.indexOf(element.color)], itemSounds[itemNames.indexOf(element.shape)]])
+          }
+	}
+  }
+  if(!dragging) {
+  
+	  //Item setting!
+	  for (let i = 0; i < itemNames.length; i++) {
+		if (cursorInRect(x, y, itemButtons[i].x, itemButtons[i].y, itemButtons[i].edge, itemButtons[i].edge)) {
+		  dragging = true;
+		  let newItem = new CanvasItem(x, y, itemButtons[i].image, 1, 1)
+		  items.push(newItem)
+		  dragObject = newItem
+		  clickStartX = x;
+		  clickStartY = y;
+		}
+	  }
+  
+  
+	
+  }
+});
+
+canvas.addEventListener('mousemove', (e) => {
+  if (dragging) {
+	const rect = canvas.getBoundingClientRect();
+	dragObject.x += e.clientX - rect.left - clickStartX;
+	dragObject.y += e.clientY - rect.top - clickStartY;
+	clickStartX = e.clientX - rect.left;
+	clickStartY = e.clientY - rect.top;
+  }
+});
+
+
+canvas.addEventListener('mouseup', (eV) => {
+if(touching) return;
+
+  let mouse = getMouseCoords(canvas, eV)
+
+
+  if(currentMode != 'items') {
+    return;
+  }
+
+  //Add to undo history
+  if(dragObject != null) {
+    dragging = false;
+    dragObject = null
+  }
+});
+
+// Resize whenever window size changes
+window.addEventListener('resize', resizeCanvas);
+	
+  </script>
+</body>
+</html>
